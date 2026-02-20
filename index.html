@@ -3,245 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Orbital Explorer | NASA Terminal v8.9 Gold</title>
+    <title>Orbital Explorer | NASA Terminal v10.0 Gold</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
-
-        html, body {
-            margin: 0; padding: 0; height: 100%;
-            background-color: #000; color: white;
-            cursor: none; overflow-x: hidden;
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* ЭФФЕКТ ГЛИТЧА */
-        .glitch-active #grid-container {
-            animation: shake 0.2s infinite;
-            filter: hue-rotate(90deg) contrast(1.5);
-        }
-        @keyframes shake {
-            0% { transform: translate(0,0); }
-            25% { transform: translate(5px, -5px); }
-            50% { transform: translate(-5px, 5px); }
-            75% { transform: translate(2px, -2px); }
-            100% { transform: translate(0,0); }
-        }
-
-        /* HUD ПАНЕЛЬ */
-        #top-hud {
-            position: fixed; top: 0; left: 0; width: 100%;
-            height: 60px; z-index: 1000;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, transparent 100%);
-            border-bottom: 1px solid rgba(59, 130, 246, 0.2);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; font-family: monospace;
-        }
-
-        .hud-item { font-size: 9px; color: #60a5fa; letter-spacing: 1px; }
-
-        /* УВЕДОМЛЕНИЯ */
-        #alert-container {
-            position: fixed; top: 70px; right: 10px; z-index: 2000;
-            display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-            max-width: 90vw;
-        }
-        .alert-box {
-            background: rgba(5, 11, 28, 0.9); border-left: 3px solid #60a5fa;
-            padding: 10px 15px; font-family: monospace; font-size: 10px;
-            color: #60a5fa; backdrop-filter: blur(10px);
-            animation: alert-in 0.5s ease-out forwards;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            line-height: 1.4;
-        }
-        @keyframes alert-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-
-        /* СЕТКА ФОНА */
-        #grid-container { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
-        #grid-overlay {
-            position: absolute; inset: 0;
-            background-image: 
-                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
-            background-size: 50px 50px;
-        }
-
-        /* 3D ОКНО */
-        #space-view {
-            position: fixed; inset: 0; z-index: 5000; display: none;
-            background: #000;
-        }
-        #three-canvas { width: 100%; height: 100%; cursor: grab; }
-
-        .telemetry-overlay {
-            position: absolute; top: 80px; left: 20px; width: 280px;
-            background: rgba(0, 20, 40, 0.6); border: 1px solid #3b82f6;
-            padding: 15px; font-family: monospace; color: #60a5fa;
-            pointer-events: none; backdrop-filter: blur(5px);
-        }
-
-        /* КАРТОЧКИ */
-        .glass { 
-            background: rgba(15, 15, 15, 0.6); 
-            backdrop-filter: blur(20px); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            border-radius: 30px;
-            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-            cursor: pointer;
-            position: relative;
-            z-index: 10;
-            overflow: hidden;
-        }
-        .glass:hover { 
-            border-color: #3b82f6; 
-            background: rgba(20, 30, 60, 0.4);
-            transform: translateY(-5px) scale(1.02); 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(59, 130, 246, 0.2);
-        }
-
-        /* КУРСОР (скрыт на мобильных) */
-        #cursor { width: 20px; height: 20px; border: 2px solid #60a5fa; border-radius: 50%; position: fixed; pointer-events: none; z-index: 100000; transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s; display: none; }
-        #coords { position: fixed; font-size: 9px; font-family: monospace; color: #60a5fa; z-index: 100001; pointer-events: none; display: none; }
-        
-        #starfield { position: fixed; inset: 0; z-index: -1; background: #050b1c; }
-
-        .card-img-container {
-            height: 200px; width: 100%; border-radius: 20px;
-            overflow: hidden; margin-bottom: 1.5rem; position: relative;
-        }
-        .card-img-container img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: brightness(0.7); transition: transform 0.8s ease;
-        }
-        .glass:hover img { transform: scale(1.1); filter: brightness(1); }
-
-        /* ЭФФЕКТ EXPLORER */
-        .clickable-word { 
-            text-decoration: underline; 
-            text-decoration-color: rgba(59, 130, 246, 0.3); 
-            cursor: pointer; 
-            transition: all 0.3s ease;
-        }
-        .clickable-word:hover {
-            color: #60a5fa;
-            text-shadow: 0 0 15px #3b82f6;
-            text-decoration-color: #60a5fa;
-        }
-
-        /* СКАНЕР */
-        .scanline {
-            position: absolute; top: -10px; left: 0; width: 100%; height: 3px;
-            background: rgba(96, 165, 250, 0.8);
-            box-shadow: 0 0 15px rgba(96, 165, 250, 1);
-            display: none; z-index: 20; pointer-events: none;
-        }
-        .glass:hover .scanline { display: block; animation: scan-anim 2s linear infinite; }
-        @keyframes scan-anim {
-            0% { top: -10px; opacity: 0; }
-            50% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        /* ТЕРМИНАЛ */
-        #cmd-terminal {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(0, 5, 15, 0.95); border-top: 1px solid rgba(59, 130, 246, 0.4);
-            z-index: 4000; padding: 10px 20px; display: flex; align-items: center; gap: 8px;
-            font-family: monospace; backdrop-filter: blur(10px);
-        }
-        #cmd-input {
-            background: transparent; border: none; outline: none;
-            color: #fff; width: 100%; font-size: 12px;
-        }
-
-        /* STAR MAP ТЕКСТОВАЯ */
-        #star-map {
-            position: fixed; inset: 0; z-index: 3000; display: none;
-            background: #000; padding: 70px 20px 20px; overflow-y: auto;
-        }
-        .map-text-box {
-            border: 1px solid #1e3a8a; background: rgba(30, 58, 138, 0.1);
-            padding: 15px; border-radius: 8px; font-family: monospace;
-        }
-
-        /* МИНИ ИГРА */
-        #game-container {
-            position: fixed; inset: 0; z-index: 8000; display: none;
-            background: #000; flex-direction: column; align-items: center; justify-content: center;
-            padding: 10px;
-        }
-        #game-canvas { 
-            border: 2px solid #3b82f6; 
-            background: #001;
-            width: 100%;
-            height: auto;
-            max-width: 600px;
-            aspect-ratio: 600 / 400;
-        }
-
-        /* МОБИЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ */
-        .mobile-controls {
-            display: none; /* по умолчанию скрыты, включаются медиа-запросом */
-            position: fixed;
-            bottom: 80px; /* выше кнопки Abort Mission */
-            left: 0;
-            width: 100%;
-            justify-content: center;
-            gap: 20px;
-            z-index: 9000;
-            pointer-events: none; /* чтобы клики проходили сквозь контейнер, но не сквозь кнопки */
-        }
-        .mobile-controls button {
-            pointer-events: auto; /* кнопки кликабельны */
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            background: rgba(0, 10, 20, 0.8);
-            border: 2px solid #3b82f6;
-            color: #3b82f6;
-            font-size: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-            touch-action: manipulation;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 0 15px rgba(59,130,246,0.3);
-            transition: all 0.1s ease;
-        }
-        .mobile-controls button:active {
-            background: #3b82f6;
-            color: black;
-            transform: scale(1.1);
-        }
-        @media (max-width: 640px) {
-            .mobile-controls { display: flex; }
-        }
-
-        /* МОБИЛЬНАЯ АДАПТАЦИЯ */
-        @media (min-width: 640px) {
-            #cursor, #coords { display: block; }
-            .hud-item { font-size: 10px; }
-        }
-
-        @media (max-width: 640px) {
-            #top-hud { padding: 0 10px; height: 50px; }
-            .hud-item { font-size: 8px; }
-            .glass { border-radius: 20px; }
-            h1 { font-size: 3.5rem; }
-            .telemetry-overlay { left: 10px; width: calc(100% - 20px); max-width: 280px; }
-            #cmd-terminal { padding: 8px 12px; }
-            #cmd-input { font-size: 11px; }
-        }
-    </style>
+    <link rel="stylesheet" href="stylee.css">
 </head>
 <body onclick="triggerGlitch()">
 
+    <!-- АУДИО -->
     <audio id="bg-music" loop>
         <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- HUD -->
     <header id="top-hud">
         <div class="hud-item flex items-center gap-2">
             <span class="w-2 h-2 bg-blue-500 rounded-full animate-ping"></span>
@@ -249,13 +23,17 @@
         </div>
         <div class="hud-item flex gap-3">
             <span class="cursor-pointer hover:text-white" onclick="event.stopPropagation(); showStarMap();">[ STAR_MAP ]</span>
+            <span class="cursor-pointer hover:text-white" onclick="event.stopPropagation(); show3DMap();">[ 3D_COSMOS ]</span>
+            <span class="cursor-pointer hover:text-white" onclick="event.stopPropagation(); showSolarSystem();">[ SOLAR_SYS ]</span>
         </div>
         <div class="hud-item">MISSION: <span id="mission-clock">00:00:00</span></div>
     </header>
 
+    <!-- СЕТКА И УВЕДОМЛЕНИЯ -->
     <div id="grid-container"><div id="grid-overlay"></div></div>
     <div id="alert-container"></div>
 
+    <!-- ТЕКСТОВАЯ КАРТА (оставлена для совместимости) -->
     <div id="star-map" onclick="event.stopPropagation();">
         <div class="flex flex-wrap justify-between items-center mb-5 border-b border-blue-500 pb-3">
             <h2 class="text-xl sm:text-3xl font-black italic text-white">CONSTELLATION NAVIGATOR</h2>
@@ -265,40 +43,46 @@
             <div class="map-text-box">
                 <h4 class="text-blue-400 font-bold text-lg mb-2">SECTOR: ORION</h4>
                 <p class="text-xs text-gray-400 leading-relaxed">
-                    [STATUS: ACTIVE]<br>
-                    COORDS: 05h 35m / -05°<br>
-                    OBJECTS: Betelgeuse, Rigel<br>
-                    ANOMALY: High radiation detected in Nebula M42.
+                    [СТАТУС: АКТИВНО]<br> КООРДИНАТЫ: 05ч 35м / -05°<br> ОБЪЕКТЫ: Бетельгейзе, Ригель<br> АНОМАЛИЯ: Высокое излучение в туманности M42.
                 </p>
             </div>
             <div class="map-text-box">
                 <h4 class="text-blue-400 font-bold text-lg mb-2">SECTOR: CASSIOPEIA</h4>
                 <p class="text-xs text-gray-400 leading-relaxed">
-                    [STATUS: STABLE]<br>
-                    COORDS: 01h 19m / +59°<br>
-                    OBJECTS: Schedar, Caph<br>
-                    NOTES: Possible site for deep space relay.
+                    [СТАТУС: СТАБИЛЬНО]<br> КООРДИНАТЫ: 01ч 19м / +59°<br> ОБЪЕКТЫ: Шедар, Каф<br> ЗАМЕТКИ: Возможное место для ретранслятора.
                 </p>
             </div>
             <div class="map-text-box">
                 <h4 class="text-blue-400 font-bold text-lg mb-2">SECTOR: URSA MAJOR</h4>
                 <p class="text-xs text-gray-400 leading-relaxed">
-                    [STATUS: OBSERVED]<br>
-                    COORDS: 10h 40m / +55°<br>
-                    OBJECTS: Merak, Dubhe<br>
-                    SCAN: Multiple exoplanets in goldilocks zone.
+                    [СТАТУС: НАБЛЮДАЕТСЯ]<br> КООРДИНАТЫ: 10ч 40м / +55°<br> ОБЪЕКТЫ: Мерак, Дубхе<br> СКАНИРОВАНИЕ: Множество экзопланет в зоне жизни.
                 </p>
             </div>
         </div>
     </div>
 
+    <!-- 3D КАРТА СОЗВЕЗДИЙ (расширенная) -->
+    <div id="constellation-view">
+        <div id="const-canvas"></div>
+        <div class="const-info" id="const-info">Нажмите на звезду или линию созвездия, чтобы увидеть информацию.</div>
+        <button onclick="closeConstellationMap()" class="absolute bottom-5 right-5 border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white">[ ЗАКРЫТЬ ]</button>
+    </div>
+
+    <!-- СОЛНЕЧНАЯ СИСТЕМА (детализированная, с русским языком) -->
+    <div id="solar-view">
+        <div id="solar-canvas"></div>
+        <div class="solar-info" id="solar-info">Нажмите на планету, чтобы увидеть информацию.</div>
+        <button onclick="closeSolarSystem()" class="absolute bottom-5 right-5 border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white">[ ЗАКРЫТЬ ]</button>
+    </div>
+
+    <!-- МИНИ-ИГРА -->
     <div id="game-container" tabindex="0" class="outline-none">
         <div class="mb-3 text-blue-400 font-mono text-xs sm:text-sm flex flex-wrap gap-3 justify-center">
-            <span>PILOT THE PROBE: [WASD] OR [ARROWS]</span>
-            <span id="live-score" class="text-white">DISTANCE: 0 LY</span>
+            <span>УПРАВЛЯЙТЕ ЗОНДОМ: [WASD] ИЛИ [СТРЕЛКИ]</span>
+            <span id="live-score" class="text-white">ДИСТАНЦИЯ: 0 LY</span>
+            <span id="shield-status" class="text-yellow-300">ЩИТ: ВЫКЛ</span>
         </div>
         <canvas id="game-canvas" width="600" height="400"></canvas>
-        <!-- Мобильные кнопки управления -->
         <div class="mobile-controls">
             <button class="ctrl-btn up" data-dir="up" aria-label="up">▲</button>
             <button class="ctrl-btn left" data-dir="left" aria-label="left">◀</button>
@@ -306,10 +90,14 @@
             <button class="ctrl-btn right" data-dir="right" aria-label="right">▶</button>
         </div>
         <button onclick="closeGame()" class="mt-4 border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white font-mono text-xs uppercase transition-colors">
-            [ Abort Mission ]
+            [ ПРЕРВАТЬ МИССИЮ ]
+        </button>
+        <button onclick="showLeaderboard()" class="mt-2 border border-blue-500 px-4 py-2 text-blue-500 hover:bg-blue-500 hover:text-white font-mono text-xs uppercase transition-colors">
+            [ ТАБЛИЦА РЕКОРДОВ ]
         </button>
     </div>
 
+    <!-- СТАРЫЙ 3D РЕЖИМ (ТУМАННОСТИ/ЭКЗОПЛАНЕТЫ) -->
     <div id="space-view" onclick="event.stopPropagation();">
         <div class="telemetry-overlay">
             <h3 id="mode-title" class="text-base sm:text-lg font-bold border-b border-blue-500 mb-2">SCANNER_V3</h3>
@@ -317,27 +105,74 @@
         </div>
         <div id="three-canvas"></div>
         <div class="absolute bottom-5 right-5 sm:bottom-10 sm:right-10">
-            <button onclick="closeDive()" class="px-4 py-2 sm:px-8 sm:py-3 border border-red-500 text-red-500 font-mono text-xs hover:bg-red-500 hover:text-white rounded-full uppercase">[ Disconnect ]</button>
+            <button onclick="closeDive()" class="px-4 py-2 sm:px-8 sm:py-3 border border-red-500 text-red-500 font-mono text-xs hover:bg-red-500 hover:text-white rounded-full uppercase">[ ОТКЛЮЧИТЬСЯ ]</button>
         </div>
     </div>
 
+    <!-- VOYAGER MODAL -->
     <div id="voyager-modal" class="fixed inset-0 hidden items-center justify-center bg-black/80 z-[7000] p-4" onclick="closeVoyagerLog();">
         <div class="voyager-box bg-[#020816] border border-blue-500 p-5 w-full max-w-md font-mono text-blue-400" onclick="event.stopPropagation()">
             <div class="flex justify-between border-b border-blue-900 pb-2 mb-3">
-                <span>FILE: VOYAGER.log</span>
+                <span>ФАЙЛ: VOYAGER.log</span>
                 <button onclick="closeVoyagerLog()">[ X ]</button>
             </div>
             <div id="voyager-log-content" class="text-xs mb-4"></div>
-            <button onclick="startGame()" class="w-full border border-blue-500 py-2 hover:bg-blue-500/20 text-xs uppercase">[ Manual Override: Play Test ]</button>
+            <button onclick="startGame()" class="w-full border border-blue-500 py-2 hover:bg-blue-500/20 text-xs uppercase">[ РУЧНОЕ УПРАВЛЕНИЕ ]</button>
         </div>
     </div>
 
+    <!-- НОВЫЕ МОДАЛКИ -->
+    <div id="encyclopedia-modal" class="modal">
+        <div class="modal-content">
+            <h2>✦ КОСМИЧЕСКАЯ ЭНЦИКЛОПЕДИЯ ✦</h2>
+            <div id="encyclopedia-content">Загрузка...</div>
+            <button onclick="closeEncyclopedia()" class="mt-4">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <div id="quiz-modal" class="modal">
+        <div class="modal-content">
+            <h2>✦ АСТРОНОМИЧЕСКАЯ ВИКТОРИНА ✦</h2>
+            <div id="quiz-content">
+                <p id="quiz-question"></p>
+                <div id="quiz-options"></div>
+                <p id="quiz-result"></p>
+            </div>
+            <button onclick="closeQuiz()" class="mt-4">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <div id="leaderboard-modal" class="modal">
+        <div class="modal-content">
+            <h2>✦ ТОП-10 ПИЛОТОВ ✦</h2>
+            <ul id="leaderboard-list"><li>Загрузка...</li></ul>
+            <button onclick="closeLeaderboard()" class="mt-4">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <!-- Секретный архив -->
+    <div id="secret-archive">
+        <div class="flex justify-between items-center border-b border-red-700 pb-3 mb-5">
+            <h2 class="text-3xl font-black text-red-600">СОВЕРШЕННО СЕКРЕТНО</h2>
+            <button onclick="closeSecret()" class="text-red-500 border border-red-500 px-3 py-1">[ ВЫХОД ]</button>
+        </div>
+        <div class="text-red-400 font-mono space-y-4">
+            <p>ФАЙЛ: NASA-SP-117 // ТОЛЬКО ДЛЯ ГЛАЗ</p>
+            <p>> ПРОЕКТ ОРИОН: рассекречен в 2025</p>
+            <p>> Сигнал из Проксимы Центавра b: "ПОВТОРЯЮЩИЙСЯ ИМПУЛЬС 0.5с"</p>
+            <p>> Снимок чёрной дыры: подлог? Приложена внутренняя записка.</p>
+            <p>> Вояджер-1: последняя передача содержала неизвестный символ.</p>
+        </div>
+    </div>
+
+    <!-- КУРСОР И КООРДИНАТЫ -->
     <div id="cursor"></div>
     <div id="coords">TRK: 0.000 / 0.000</div>
     <div id="starfield"></div>
 
+    <!-- ЗАГОЛОВОК И КАРТОЧКИ -->
     <section class="relative h-[35vh] sm:h-[45vh] flex flex-col items-center justify-center text-center px-4">
-        <div class="animate-pulse mb-3 text-blue-400 tracking-[0.3em] text-[10px] uppercase">Orbital System Active</div>
+        <div class="animate-pulse mb-3 text-blue-400 tracking-[0.3em] text-[10px] uppercase">Орбитальная система активна</div>
         <h1 class="text-5xl sm:text-7xl md:text-8xl font-black italic tracking-tighter uppercase leading-none mb-4">
             Orbital <span class="clickable-word" onclick="event.stopPropagation(); openVoyagerLog();">Explorer</span>
         </h1>
@@ -366,18 +201,22 @@
         </div>
     </section>
 
+    <!-- ТЕРМИНАЛ -->
     <div id="cmd-terminal" onclick="event.stopPropagation();">
         <span class="text-blue-500 font-bold">CMD></span>
-        <input type="text" id="cmd-input" placeholder="Type /play, /status, /clear..." autocomplete="off">
+        <input type="text" id="cmd-input" placeholder="Введите /play, /status, /clear, /library, /quiz, /coords, /init, /debug..." autocomplete="off">
     </div>
 
+    <!-- Элемент для плавного перехода -->
+    <div id="transition-overlay" class="fixed top-0 left-[-100%] w-full h-full bg-black/80 backdrop-blur-md z-[20000] transition-all duration-500 ease-in-out pointer-events-none"></div>
+
     <script>
+        // ==================== СТАРЫЙ КОД (ПОЛНОСТЬЮ СОХРАНЁН) ====================
         const cursor = document.getElementById('cursor');
         const coords = document.getElementById('coords');
         const alertContainer = document.getElementById('alert-container');
         let scene, camera, renderer, currentObject, planetRing, stars, nebulaParticles, audioEnabled = false;
 
-        // --- ЛОГИКА МИНИ-ИГРЫ (ОБНОВЛЕННАЯ С АДАПТИВНЫМ CANVAS И ТАЧ-УПРАВЛЕНИЕМ) ---
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         let gameActive = false;
@@ -387,68 +226,52 @@
         let keys = {};
         let gameLoopId;
 
-        // --- ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНЫХ КНОПОК ---
         function setupMobileControls() {
             const ctrlUp = document.querySelector('.ctrl-btn.up');
             const ctrlDown = document.querySelector('.ctrl-btn.down');
             const ctrlLeft = document.querySelector('.ctrl-btn.left');
             const ctrlRight = document.querySelector('.ctrl-btn.right');
 
-            // Функция обновления состояния клавиш (только если игра активна)
             function setKey(code, state, e) {
-                if (e) e.preventDefault(); // предотвращаем действия браузера
-                if (gameActive) {
-                    keys[code] = state;
-                }
+                if (e) e.preventDefault();
+                if (gameActive) keys[code] = state;
             }
 
-            // Touch события
             ctrlUp.addEventListener('touchstart', (e) => setKey('ArrowUp', true, e));
             ctrlUp.addEventListener('touchend', (e) => setKey('ArrowUp', false, e));
             ctrlUp.addEventListener('touchcancel', (e) => setKey('ArrowUp', false, e));
-
             ctrlDown.addEventListener('touchstart', (e) => setKey('ArrowDown', true, e));
             ctrlDown.addEventListener('touchend', (e) => setKey('ArrowDown', false, e));
             ctrlDown.addEventListener('touchcancel', (e) => setKey('ArrowDown', false, e));
-
             ctrlLeft.addEventListener('touchstart', (e) => setKey('ArrowLeft', true, e));
             ctrlLeft.addEventListener('touchend', (e) => setKey('ArrowLeft', false, e));
             ctrlLeft.addEventListener('touchcancel', (e) => setKey('ArrowLeft', false, e));
-
             ctrlRight.addEventListener('touchstart', (e) => setKey('ArrowRight', true, e));
             ctrlRight.addEventListener('touchend', (e) => setKey('ArrowRight', false, e));
             ctrlRight.addEventListener('touchcancel', (e) => setKey('ArrowRight', false, e));
 
-            // Для отладки на десктопе (мышь)
             ctrlUp.addEventListener('mousedown', (e) => setKey('ArrowUp', true, e));
             ctrlUp.addEventListener('mouseup', (e) => setKey('ArrowUp', false, e));
             ctrlUp.addEventListener('mouseleave', (e) => setKey('ArrowUp', false, e));
-
             ctrlDown.addEventListener('mousedown', (e) => setKey('ArrowDown', true, e));
             ctrlDown.addEventListener('mouseup', (e) => setKey('ArrowDown', false, e));
             ctrlDown.addEventListener('mouseleave', (e) => setKey('ArrowDown', false, e));
-
             ctrlLeft.addEventListener('mousedown', (e) => setKey('ArrowLeft', true, e));
             ctrlLeft.addEventListener('mouseup', (e) => setKey('ArrowLeft', false, e));
             ctrlLeft.addEventListener('mouseleave', (e) => setKey('ArrowLeft', false, e));
-
             ctrlRight.addEventListener('mousedown', (e) => setKey('ArrowRight', true, e));
             ctrlRight.addEventListener('mouseup', (e) => setKey('ArrowRight', false, e));
             ctrlRight.addEventListener('mouseleave', (e) => setKey('ArrowRight', false, e));
         }
 
-        // Вызываем после загрузки DOM
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setupMobileControls);
         } else {
             setupMobileControls();
         }
 
-        // Обработка клавиатуры (оставляем как есть)
         window.addEventListener('keydown', e => { 
-            if (gameActive && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
-                e.preventDefault(); 
-            }
+            if (gameActive && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault(); 
             keys[e.code] = true; 
         });
         window.addEventListener('keyup', e => { keys[e.code] = false; });
@@ -457,90 +280,23 @@
             closeVoyagerLog();
             document.getElementById('star-map').style.display = 'none';
             document.getElementById('space-view').style.display = 'none';
-            
             const container = document.getElementById('game-container');
             container.style.display = 'flex';
             container.focus();
-            
-            // Сброс состояния
             gameActive = true;
             score = 0;
             asteroids = [];
             player.x = 80;
             player.y = canvas.height / 2;
-            
+            if (typeof resetGameExtensions === 'function') resetGameExtensions();
             cancelAnimationFrame(gameLoopId);
             gameLoop();
-            spawnAlert("MANUAL PILOTING ENGAGED");
+            spawnAlert("РУЧНОЕ ПИЛОТИРОВАНИЕ АКТИВИРОВАНО");
         }
 
-        function updateGame() {
-            if (!gameActive) return;
-
-            // Управление (клавиши + мобильные кнопки уже влияют на keys)
-            if ((keys['KeyW'] || keys['ArrowUp']) && player.y > player.size) player.y -= player.speed;
-            if ((keys['KeyS'] || keys['ArrowDown']) && player.y < canvas.height - player.size) player.y += player.speed;
-            if ((keys['KeyA'] || keys['ArrowLeft']) && player.x > player.size) player.x -= player.speed;
-            if ((keys['KeyD'] || keys['ArrowRight']) && player.x < canvas.width - player.size) player.x += player.speed;
-
-            document.getElementById('live-score').innerText = `DISTANCE: ${score * 100} LY`;
-
-            let spawnChance = 0.05 + (score * 0.0005);
-            if (Math.random() < Math.min(spawnChance, 0.2)) {
-                asteroids.push({
-                    x: canvas.width + 50,
-                    y: Math.random() * canvas.height,
-                    size: 10 + Math.random() * 30,
-                    speed: 4 + Math.random() * (score / 20)
-                });
-            }
-
-            for (let i = asteroids.length - 1; i >= 0; i--) {
-                let ast = asteroids[i];
-                ast.x -= ast.speed;
-
-                if (ast.x < -50) {
-                    asteroids.splice(i, 1);
-                    score++;
-                    continue;
-                }
-
-                let dx = player.x - ast.x;
-                let dy = player.y - ast.y;
-                let distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance < (player.size/2 + ast.size/2) * 0.8) {
-                    endGame();
-                }
-            }
-        }
-
-        function drawGame() {
-            ctx.fillStyle = '#000814';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            ctx.strokeStyle = 'rgba(59, 130, 246, 0.1)';
-            for(let i = 0; i < canvas.width; i+=40) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-            }
-
-            asteroids.forEach(ast => {
-                ctx.fillStyle = '#475569';
-                ctx.beginPath();
-                ctx.arc(ast.x, ast.y, ast.size / 2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#64748b';
-                ctx.stroke();
-            });
-
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = '#60a5fa';
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.shadowBlur = 0;
-        }
+        // Заглушки
+        function updateGame() { /* заглушка */ }
+        function drawGame() { /* заглушка */ }
 
         function gameLoop() {
             if (!gameActive) return;
@@ -551,8 +307,8 @@
 
         function endGame() {
             gameActive = false;
-            spawnAlert("CRITICAL FAILURE: PROBE DESTROYED");
-            spawnAlert("FINAL DATA RECOVERED: " + (score * 100) + " LY");
+            spawnAlert("КРИТИЧЕСКИЙ СБОЙ: ЗОНД УНИЧТОЖЕН");
+            spawnAlert("ФИНАЛЬНЫЕ ДАННЫЕ: " + (score * 100) + " LY");
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             setTimeout(closeGame, 1500);
@@ -562,11 +318,9 @@
             gameActive = false;
             cancelAnimationFrame(gameLoopId);
             document.getElementById('game-container').style.display = 'none';
-            // Сбрасываем клавиши, чтобы зонд не двигался после закрытия
             keys = {};
         }
 
-        // --- ОСТАЛЬНЫЕ СИСТЕМНЫЕ ФУНКЦИИ ---
         function spawnAlert(msg) {
             const alert = document.createElement('div');
             alert.className = 'alert-box';
@@ -578,7 +332,7 @@
         function openVoyagerLog() {
             document.getElementById('voyager-modal').classList.remove('hidden');
             document.getElementById('voyager-modal').classList.add('flex');
-            typeWriter("voyager-log-content", "> Voyager 1: Выход за пределы гелиосферы...\n> Дистанция: 24 млрд км.\n> Статус: Обнаружен зашифрованный сигнал.");
+            typeWriter("voyager-log-content", "> Вояджер-1: Выход за пределы гелиосферы...\n> Дистанция: 24 млрд км.\n> Статус: Обнаружен зашифрованный сигнал.");
         }
         function closeVoyagerLog() { document.getElementById('voyager-modal').classList.add('hidden'); }
 
@@ -589,7 +343,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.getElementById('three-canvas').appendChild(renderer.domElement);
-            
             scene.add(new THREE.AmbientLight(0x404040, 2));
             const light = new THREE.PointLight(0xffffff, 2);
             light.position.set(20, 20, 20);
@@ -604,7 +357,6 @@
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
             stars = new THREE.Points(starGeo, starMat);
             scene.add(stars);
-
             animate();
         }
 
@@ -631,7 +383,7 @@
             planetRing.rotation.x = Math.PI / 2.5;
             scene.add(planetRing);
             camera.position.z = 20;
-            typeWriter("telemetry-content", "OBJECT: K-186F\nТИП: ЭКЗОПЛАНЕТА\nКЛАСС: СУПЕРЗЕМЛЯ\nСТАТУС: СКАНИРОВАНИЕ...");
+            typeWriter("telemetry-content", "ОБЪЕКТ: K-186F\nТИП: ЭКЗОПЛАНЕТА\nКЛАСС: СУПЕРЗЕМЛЯ\nСТАТУС: СКАНИРОВАНИЕ...");
         }
 
         function diveIntoNebula() {
@@ -656,7 +408,7 @@
             nebulaParticles = new THREE.Points(geo, mat);
             scene.add(nebulaParticles);
             camera.position.z = 30;
-            typeWriter("telemetry-content", "OBJECT: NEBULA-G7\nОТДАЛЕННОСТЬ: 7.4A9320\nСОСТАВ: ВОДОРОД, ГЕЛИЙ\nИЗЛУЧЕНИЕ: КРИТИЧЕСКОЕ");
+            typeWriter("telemetry-content", "ОБЪЕКТ: NEBULA-G7\nДИСТАНЦИЯ: 7.4A9320\nСОСТАВ: ВОДОРОД, ГЕЛИЙ\nИЗЛУЧЕНИЕ: КРИТИЧЕСКОЕ");
         }
 
         function clear3D() {
@@ -690,7 +442,7 @@
             const m = document.getElementById('bg-music');
             audioEnabled ? m.pause() : m.play();
             audioEnabled = !audioEnabled;
-            document.getElementById('audio-btn').innerText = audioEnabled ? "[ AUDIO: ON ]" : "[ AUDIO: OFF ]";
+            document.getElementById('audio-btn').innerText = audioEnabled ? "[ АУДИО: ВКЛ ]" : "[ АУДИО: ВЫКЛ ]";
         }
 
         document.addEventListener('mousemove', (e) => {
@@ -699,27 +451,713 @@
             coords.style.left = (e.clientX + 20) + 'px'; coords.style.top = (e.clientY + 20) + 'px';
         });
 
+        // Старый обработчик терминала
+        const oldCmdHandler = function(e) {
+            if (e.key === 'Enter') {
+                const val = this.value.toLowerCase();
+                this.value = '';
+                if (val === '/status') spawnAlert("ВСЕ СИСТЕМЫ НОМИНАЛЬНЫ");
+                else if (val === '/play') startGame();
+                else if (val === '/clear') alertContainer.innerHTML = '';
+            }
+        };
+        document.getElementById('cmd-input').addEventListener('keydown', oldCmdHandler);
+
+        setInterval(() => { document.getElementById('mission-clock').innerText = new Date().toLocaleTimeString('ru-RU'); }, 1000);
+        window.onload = () => typeWriter("hero-type", "NASA TERMINAL v10.0 // СВЯЗЬ УСТАНОВЛЕНА // РАСШИРЕННЫЕ МОДУЛИ АКТИВНЫ");
+
+        function resizeGameCanvas() {
+            if (canvas) { canvas.width = 600; canvas.height = 400; }
+        }
+        window.addEventListener('resize', resizeGameCanvas);
+        resizeGameCanvas();
+
+        // ==================== НОВЫЙ КОД: РАСШИРЕНИЯ ====================
+
+        // ---- ПЕРЕМЕННЫЕ ДЛЯ НОВЫХ ФУНКЦИЙ ----
+// ---- ПЕРЕМЕННЫЕ ДЛЯ НОВЫХ ФУНКЦИЙ ----
+        let constScene, constCamera, constRenderer;
+        let solarScene, solarCamera, solarRenderer, planets = [];
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let leaderboard = JSON.parse(localStorage.getItem('orbital_leaderboard')) || [];
+        let quizScore = 0, quizIndex = 0;
+        const questions = [
+            { q: "Какая планета самая большая?", options: ["Земля", "Юпитер", "Сатурн", "Нептун"], correct: 1 },
+            { q: "Что такое чёрная дыра?", options: ["Звезда", "Облако газа", "Область сильной гравитации", "Планета"], correct: 2 },
+            { q: "Сколько планет в Солнечной системе?", options: ["8", "9", "7", "10"], correct: 0 }
+        ];
+        let secretCode = [];
+        const expectedCode = ['Orbital', 'Explorer', 'Туманности', 'Экзопланеты'];
+
+        // ---- РАСШИРЕННАЯ МИНИ-ИГРА ----
+        let objects = [];
+        let difficulty = 1;
+
+        function resetGameExtensions() {
+            player.shield = false;
+            player.shieldTimer = 0;
+            player.speedBoost = 1;
+            player.boostTimer = 0;
+            objects = [];
+            difficulty = 1;
+        }
+
+        updateGame = function() {
+            if (!gameActive) return;
+
+            if ((keys['KeyW'] || keys['ArrowUp']) && player.y > player.size) player.y -= player.speed * player.speedBoost;
+            if ((keys['KeyS'] || keys['ArrowDown']) && player.y < canvas.height - player.size) player.y += player.speed * player.speedBoost;
+            if ((keys['KeyA'] || keys['ArrowLeft']) && player.x > player.size) player.x -= player.speed * player.speedBoost;
+            if ((keys['KeyD'] || keys['ArrowRight']) && player.x < canvas.width - player.size) player.x += player.speed * player.speedBoost;
+
+            document.getElementById('live-score').innerText = `ДИСТАНЦИЯ: ${score * 100} LY`;
+            document.getElementById('shield-status').innerText = player.shield ? 'ЩИТ: ВКЛ' : 'ЩИТ: ВЫКЛ';
+
+            if (player.shieldTimer > 0) player.shieldTimer--;
+            else player.shield = false;
+            if (player.boostTimer > 0) player.boostTimer--;
+            else player.speedBoost = 1;
+
+            let spawnChance = 0.05 + (score * 0.0005) * difficulty;
+            if (Math.random() < Math.min(spawnChance, 0.2)) {
+                asteroids.push({
+                    x: canvas.width + 50,
+                    y: Math.random() * canvas.height,
+                    size: 10 + Math.random() * 30,
+                    speed: 4 + Math.random() * (score / 20) * difficulty,
+                    type: 'asteroid'
+                });
+            }
+            if (Math.random() < 0.01) {
+                objects.push({ x: canvas.width + 50, y: Math.random() * canvas.height, size: 15, type: 'shield' });
+            }
+            if (Math.random() < 0.008) {
+                objects.push({ x: canvas.width + 50, y: Math.random() * canvas.height, size: 15, type: 'speed' });
+            }
+            if (Math.random() < 0.005 && difficulty > 1) {
+                objects.push({ x: canvas.width + 50, y: Math.random() * canvas.height, size: 30, type: 'slow' });
+            }
+            if (Math.random() < 0.003 && difficulty > 2) {
+                objects.push({ x: canvas.width + 50, y: Math.random() * canvas.height, size: 40, type: 'blackhole' });
+            }
+
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                let ast = asteroids[i];
+                ast.x -= ast.speed;
+                if (ast.x < -50) {
+                    asteroids.splice(i, 1);
+                    score++;
+                    continue;
+                }
+                let dx = player.x - ast.x;
+                let dy = player.y - ast.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (player.size/2 + ast.size/2) * 0.8) {
+                    if (!player.shield) endGame();
+                    else asteroids.splice(i,1);
+                }
+            }
+
+            for (let i = objects.length - 1; i >= 0; i--) {
+                let obj = objects[i];
+                obj.x -= 3;
+                if (obj.x < -50) { objects.splice(i,1); continue; }
+                let dx = player.x - obj.x;
+                let dy = player.y - obj.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < (player.size/2 + obj.size/2) * 0.8) {
+                    if (obj.type === 'shield') {
+                        player.shield = true;
+                        player.shieldTimer = 200;
+                        spawnAlert("ЩИТ АКТИВИРОВАН");
+                    } else if (obj.type === 'speed') {
+                        player.speedBoost = 2;
+                        player.boostTimer = 200;
+                        spawnAlert("УСКОРЕНИЕ");
+                    } else if (obj.type === 'slow') {
+                        player.speedBoost = 0.5;
+                        player.boostTimer = 100;
+                        spawnAlert("ЗАМЕДЛЕНИЕ");
+                    } else if (obj.type === 'blackhole') {
+                        let angle = Math.atan2(canvas.height/2 - player.y, canvas.width/2 - player.x);
+                        player.x += Math.cos(angle) * 2;
+                        player.y += Math.sin(angle) * 2;
+                    }
+                    objects.splice(i,1);
+                }
+            }
+        };
+
+        drawGame = function() {
+            ctx.fillStyle = '#000814';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(59, 130, 246, 0.1)';
+            for(let i = 0; i < canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            asteroids.forEach(ast => {
+                ctx.fillStyle = '#475569';
+                ctx.beginPath();
+                ctx.arc(ast.x, ast.y, ast.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#64748b';
+                ctx.stroke();
+            });
+            objects.forEach(obj => {
+                if (obj.type === 'shield') ctx.fillStyle = '#00ffaa';
+                else if (obj.type === 'speed') ctx.fillStyle = '#ffff00';
+                else if (obj.type === 'slow') ctx.fillStyle = '#8888ff';
+                else if (obj.type === 'blackhole') ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, obj.size/2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+            });
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = player.shield ? '#00ffaa' : '#60a5fa';
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        };
+
+        const originalEndGame = endGame;
+        endGame = function() {
+            gameActive = false;
+            leaderboard.push(score * 100);
+            leaderboard.sort((a,b) => b - a);
+            leaderboard = leaderboard.slice(0,10);
+            localStorage.setItem('orbital_leaderboard', JSON.stringify(leaderboard));
+            originalEndGame();
+        };
+
+        // ---- 3D КАРТА СОЗВЕЗДИЙ (РАСШИРЕННАЯ, РУССКИЙ ЯЗЫК) ----
+        function show3DMap() {
+            document.getElementById('constellation-view').style.display = 'block';
+            if (!constScene) initConstellationMap();
+        }
+        function closeConstellationMap() {
+            document.getElementById('constellation-view').style.display = 'none';
+        }
+function initConstellationMap() {
+    const container = document.getElementById('const-canvas');
+    while (container.firstChild) container.removeChild(container.firstChild);
+    
+    constScene = new THREE.Scene();
+    constScene.background = new THREE.Color(0x050b1c);
+    
+    constCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    constCamera.position.set(0, 5, 40);
+    constCamera.lookAt(0, 0, 0);
+    
+    constRenderer = new THREE.WebGLRenderer({ antialias: true });
+    constRenderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(constRenderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    constScene.add(ambientLight);
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    constScene.add(light);
+
+    // Звёзды фона (разнесены дальше)
+    const starsGeo = new THREE.BufferGeometry();
+    const starsPos = [];
+    for (let i = 0; i < 3000; i++) {
+        const r = 40 + Math.random() * 30;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.sin(phi) * Math.sin(theta);
+        const z = r * Math.cos(phi);
+        starsPos.push(x, y, z);
+    }
+    starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPos, 3));
+    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 });
+    const constStars = new THREE.Points(starsGeo, starsMat);
+    constScene.add(constStars);
+
+    // Локальные координаты для каждого созвездия (центрированы около 0)
+    const constellations = [
+        { 
+            name: 'Орион', 
+            points: [[-1,0.5,0], [-0.5,1,0.3], [0,1,0], [0.5,0.5,-0.3], [1,0,-0.5]],
+            description: 'Орион – охотник. Содержит яркие звёзды Бетельгейзе и Ригель. Связан с мифом о гиганте, убитом скорпионом.'
+        },
+        { 
+            name: 'Большая Медведица', 
+            points: [[0,0,0], [0.8,0.2,0.2], [1.5,0.1,0.4], [2.2,-0.2,0.3], [2.8,-0.5,0.1]],
+            description: 'Большая Медведица – один из самых узнаваемых астеризмов. Семь ярких звёзд образуют ковш.'
+        },
+        { 
+            name: 'Кассиопея', 
+            points: [[0,0,0], [-0.7,0.5,0.3], [0,1,0.5], [0.7,0.5,0.3], [1.4,0,0]],
+            description: 'Кассиопея – созвездие в форме буквы W. Названо в честь мифической царицы.'
+        },
+        { 
+            name: 'Лебедь', 
+            points: [[0,1,0], [0.5,0.5,0.2], [0.8,0,0.1], [0.5,-0.5,-0.1], [0,-1,-0.2], [-0.5,-0.5,-0.1], [-0.8,0,0.1], [-0.5,0.5,0.2]],
+            description: 'Лебедь (Северный Крест) – содержит яркую звезду Денеб. Легенда о Зевсе, превратившемся в лебедя.'
+        },
+        { 
+            name: 'Большой Пёс', 
+            points: [[0,0,0], [0.7,0.2,0.2], [1.4,0,0.3], [2.1,-0.3,0.2], [2.8,-0.6,0]],
+            description: 'Большой Пёс – включает Сириус, самую яркую звезду ночного неба. Сопровождает Ориона в мифах.'
+        },
+        { 
+            name: 'Лира', 
+            points: [[0,0.5,0], [0.4,0.2,0.2], [0.6,-0.3,0.1], [0.2,-0.6,-0.1]],
+            description: 'Лира – маленькое созвездие с яркой звездой Вега. Связано с мифом об Орфее.'
+        },
+        { 
+            name: 'Геркулес', 
+            points: [[0,0.8,0], [0.6,0.4,0.2], [1,0,0.3], [0.8,-0.5,0.2], [0.4,-0.9,0], [-0.2,-0.7,-0.2], [-0.6,-0.2,-0.3], [-0.2,0.4,-0.2]],
+            description: 'Геркулес – большое созвездие, названное в честь римского героя. Содержит шаровое скопление M13.'
+        },
+        { 
+            name: 'Дракон', 
+            points: [[0,0.6,0], [0.7,0.3,0.3], [1.2,-0.2,0.5], [1.5,-0.8,0.4], [1.2,-1.4,0.2], [0.6,-1.7,0], [-0.1,-1.5,-0.2], [-0.8,-1.0,-0.4]],
+            description: 'Дракон – извивающееся созвездие вокруг Северного полюса мира. В мифах охранял золотые яблоки.'
+        }
+    ];
+
+    // Размещаем созвездия на сфере радиуса 22
+    const radius = 22;
+    const angles = constellations.map((_, i) => (i / constellations.length) * Math.PI * 2);
+
+    constellations.forEach((c, index) => {
+        const angle = angles[index];
+        const centerX = radius * Math.cos(angle);
+        const centerZ = radius * Math.sin(angle);
+        const centerY = (Math.random() - 0.5) * 5; // небольшой разброс по высоте
+
+        // Масштабируем локальные точки и смещаем к центру созвездия
+        const points = c.points.map(p => new THREE.Vector3(
+            centerX + p[0] * 2.5,
+            centerY + p[1] * 2.5,
+            centerZ + p[2] * 2.5
+        ));
+
+        // Линии
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+        const line = new THREE.Line(lineGeo, lineMat);
+        line.userData = { name: c.name, description: c.description };
+        constScene.add(line);
+
+        // Звёзды-метки
+        points.forEach(pos => {
+            const sphereGeo = new THREE.SphereGeometry(0.25, 8, 8);
+            const sphereMat = new THREE.MeshStandardMaterial({ color: 0xffaa55 });
+            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+            sphere.position.copy(pos);
+            sphere.userData = { name: c.name, description: c.description };
+            constScene.add(sphere);
+        });
+    });
+
+    raycaster = new THREE.Raycaster();
+    mouse = new THREE.Vector2();
+
+    container.style.touchAction = 'none';
+    container.addEventListener('click', onClickConstellation);
+    
+    let touchStartX = 0;
+    container.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+    });
+    container.addEventListener('touchend', (e) => {
+        if (!touchStartX) return;
+        let dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 30) {
+            constScene.rotation.y += dx * 0.005;
+        }
+    });
+
+    animateConst();
+}
+        function animateConst() {
+            requestAnimationFrame(animateConst);
+            if (constScene && constRenderer) {
+                constRenderer.render(constScene, constCamera);
+            }
+        }
+        function onClickConstellation(event) {
+            const rect = event.target.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, constCamera);
+            const clickable = constScene.children.filter(c => c.isLine || (c.isMesh && c.userData.name));
+            const intersects = raycaster.intersectObjects(clickable);
+            if (intersects.length > 0) {
+                const name = intersects[0].object.userData.name;
+                const desc = intersects[0].object.userData.description;
+                document.getElementById('const-info').innerHTML = `<strong>${name}</strong><br>${desc}`;
+            }
+        }
+
+        // ---- СОЛНЕЧНАЯ СИСТЕМА (ДЕТАЛИЗИРОВАННАЯ, РУССКИЙ ЯЗЫК) ----
+        function showSolarSystem() {
+            document.getElementById('solar-view').style.display = 'block';
+            if (!solarScene) initSolarSystem();
+        }
+        function closeSolarSystem() {
+            document.getElementById('solar-view').style.display = 'none';
+        }
+function initSolarSystem() {
+    const container = document.getElementById('solar-canvas');
+    while (container.firstChild) container.removeChild(container.firstChild);
+
+    solarScene = new THREE.Scene();
+    solarScene.background = new THREE.Color(0x050b1c);
+
+    solarCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    solarCamera.position.set(0, 20, 50);
+    solarCamera.lookAt(0, 0, 0);
+
+    solarRenderer = new THREE.WebGLRenderer({ antialias: true });
+    solarRenderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(solarRenderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x404060);
+    solarScene.add(ambientLight);
+    const sunLight = new THREE.PointLight(0xffaa55, 2, 70);
+    sunLight.position.set(0, 0, 0);
+    solarScene.add(sunLight);
+
+    // Солнце (теперь с userData для клика)
+    const sunGeo = new THREE.SphereGeometry(3, 64, 64);
+    const sunMat = new THREE.MeshStandardMaterial({ 
+        color: 0xffaa00, 
+        emissive: 0x442200,
+        emissiveIntensity: 2
+    });
+    const sun = new THREE.Mesh(sunGeo, sunMat);
+    sun.userData = { 
+        name: 'Солнце', 
+        info: 'Масса: 1.99×10^30 кг<br>Температура поверхности: 5500°C<br>Состоит из водорода (74%) и гелия (24%)',
+        distance: 0,
+        speed: 0,
+        angle: 0
+    };
+    solarScene.add(sun);
+    planets.push(sun); // Добавляем Солнце в массив кликабельных планет
+
+    // Процедурные текстуры планет (улучшенные)
+    function createPlanetTexture(baseColor, hasStripes = false, hasSpot = false, isEarth = false, isMars = false) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        
+        ctx.fillStyle = baseColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        if (hasStripes) {
+            ctx.strokeStyle = '#b08968';
+            ctx.lineWidth = 60;
+            for (let i = 0; i < 12; i++) {
+                const y = i * 120 + 40;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y + 50);
+                ctx.stroke();
+            }
+        }
+        if (hasSpot) {
+            ctx.fillStyle = '#8b0000';
+            ctx.beginPath();
+            ctx.ellipse(700, 400, 200, 150, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        if (isEarth) {
+            // Имитация континентов
+            ctx.fillStyle = '#228822';
+            ctx.beginPath();
+            ctx.ellipse(300, 200, 150, 100, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#22aa22';
+            ctx.beginPath();
+            ctx.ellipse(700, 600, 200, 150, 0.2, 0, Math.PI*2);
+            ctx.fill();
+            ctx.fillStyle = '#226622';
+            ctx.beginPath();
+            ctx.ellipse(500, 800, 120, 80, -0.1, 0, Math.PI*2);
+            ctx.fill();
+        }
+        if (isMars) {
+            // Тёмные области и кратеры
+            ctx.fillStyle = '#552222';
+            ctx.beginPath();
+            ctx.ellipse(400, 300, 200, 150, 0, 0, Math.PI*2);
+            ctx.fill();
+            for (let i=0; i<100; i++) {
+                ctx.fillStyle = '#aaaaaa';
+                ctx.beginPath();
+                ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, 5+Math.random()*15, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        if (!hasStripes && !isEarth && !isMars) {
+            for (let i = 0; i < 100; i++) {
+                ctx.fillStyle = 'rgba(200,200,200,0.5)';
+                ctx.beginPath();
+                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 5 + Math.random() * 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        return texture;
+    }
+
+    const planetData = [
+        { name: 'Меркурий', radius: 0.6, distance: 5, color: '#aaaaaa', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.02, info: 'Масса: 0.33×10^24 кг<br>Атмосфера: разреженная' },
+        { name: 'Венера', radius: 0.8, distance: 8, color: '#ffcc88', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.015, info: 'Масса: 4.87×10^24 кг<br>Атмосфера: CO2, облака серной кислоты' },
+        { name: 'Земля', radius: 0.85, distance: 11, color: '#2288ff', hasStripes: false, hasSpot: false, isEarth: true, isMars: false, speed: 0.01, info: 'Масса: 5.97×10^24 кг<br>Атмосфера: N2/O2, единственная известная жизнь' },
+        { name: 'Марс', radius: 0.7, distance: 14, color: '#ff6633', hasStripes: false, hasSpot: false, isEarth: false, isMars: true, speed: 0.008, info: 'Масса: 0.64×10^24 кг<br>Атмосфера: CO2, есть вода в виде льда' },
+        { name: 'Юпитер', radius: 1.8, distance: 18, color: '#ddbb99', hasStripes: true, hasSpot: true, isEarth: false, isMars: false, speed: 0.005, info: 'Масса: 1898×10^24 кг<br>Атмосфера: H2/He, Большое красное пятно' },
+        { name: 'Сатурн', radius: 1.5, distance: 22, color: '#eeddbb', hasStripes: true, hasSpot: false, isEarth: false, isMars: false, speed: 0.004, info: 'Масса: 568×10^24 кг<br>Имеет кольца из льда и пыли', hasRing: true },
+        { name: 'Уран', radius: 1.2, distance: 26, color: '#88ccff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.003, info: 'Масса: 86.8×10^24 кг<br>Атмосфера: H2/He/CH4, вращается на боку' },
+        { name: 'Нептун', radius: 1.2, distance: 30, color: '#3366ff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.002, info: 'Масса: 102×10^24 кг<br>Атмосфера: H2/He/CH4, сильные ветры' }
+    ];
+
+    planetData.forEach(p => {
+        const texture = createPlanetTexture(p.color, p.hasStripes, p.hasSpot, p.isEarth, p.isMars);
+        const material = new THREE.MeshStandardMaterial({ map: texture });
+        const geometry = new THREE.SphereGeometry(p.radius, 64, 64);
+        const planet = new THREE.Mesh(geometry, material);
+        planet.userData = { 
+            name: p.name, 
+            info: p.info, 
+            distance: p.distance, 
+            speed: p.speed, 
+            angle: Math.random() * Math.PI * 2 
+        };
+        planet.position.x = p.distance * Math.cos(planet.userData.angle);
+        planet.position.z = p.distance * Math.sin(planet.userData.angle);
+        solarScene.add(planet);
+        planets.push(planet);
+
+        if (p.hasRing) {
+            const ringGeo = new THREE.TorusGeometry(p.radius * 1.8, 0.3, 16, 100);
+            const ringMat = new THREE.MeshStandardMaterial({ color: 0xc2b280, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = Math.PI / 2;
+            ring.rotation.z = 0.3;
+            planet.add(ring);
+        }
+
+        // Орбита
+        const points = [];
+        for (let i = 0; i <= 64; i++) {
+            const angle = (i / 64) * Math.PI * 2;
+            points.push(new THREE.Vector3(p.distance * Math.cos(angle), 0, p.distance * Math.sin(angle)));
+        }
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const orbitMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+        const orbit = new THREE.LineLoop(orbitGeo, orbitMat);
+        solarScene.add(orbit);
+    });
+
+    container.addEventListener('click', onClickPlanet);
+
+    let touchStartX = 0;
+    container.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+    });
+    container.addEventListener('touchend', (e) => {
+        if (!touchStartX) return;
+        let dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 30) {
+            solarScene.rotation.y += dx * 0.005;
+        }
+    });
+
+    animateSolar();
+}
+
+        function animateSolar() {
+            requestAnimationFrame(animateSolar);
+            if (solarScene && solarRenderer && solarCamera) {
+                planets.forEach(p => {
+                    p.userData.angle += p.userData.speed;
+                    p.position.x = p.userData.distance * Math.cos(p.userData.angle);
+                    p.position.z = p.userData.distance * Math.sin(p.userData.angle);
+                    p.rotation.y += 0.01;
+                });
+                solarRenderer.render(solarScene, solarCamera);
+            }
+        }
+
+        function onClickPlanet(event) {
+            const rect = event.target.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, solarCamera);
+            const intersects = raycaster.intersectObjects(planets);
+            if (intersects.length > 0) {
+                const p = intersects[0].object.userData;
+                document.getElementById('solar-info').innerHTML = `<strong>${p.name}</strong><br>${p.info}`;
+            }
+        }
+
+        // ---- ЭНЦИКЛОПЕДИЯ ----
+        function showEncyclopedia() {
+            document.getElementById('encyclopedia-modal').style.display = 'flex';
+            document.getElementById('encyclopedia-content').innerHTML = `
+                <p><strong>⚫ Чёрная дыра:</strong> Область пространства-времени с огромной гравитацией.</p>
+                <p><strong>🌌 Туманность:</strong> Облако газа и пыли, место рождения звёзд.</p>
+                <p><strong>🪐 Экзопланета:</strong> Планета за пределами Солнечной системы.</p>
+            `;
+        }
+        function closeEncyclopedia() { document.getElementById('encyclopedia-modal').style.display = 'none'; }
+
+        // ---- ВИКТОРИНА ----
+        function startQuiz() {
+            quizIndex = 0; quizScore = 0;
+            document.getElementById('quiz-modal').style.display = 'flex';
+            showQuestion();
+        }
+        function showQuestion() {
+            if (quizIndex >= questions.length) {
+                document.getElementById('quiz-content').innerHTML = `<p>Викторина завершена! Правильных ответов: ${quizScore}/${questions.length}</p>`;
+                return;
+            }
+            let q = questions[quizIndex];
+            document.getElementById('quiz-question').innerText = q.q;
+            let html = '';
+            q.options.forEach((opt, idx) => {
+                html += `<div class="quiz-option" onclick="answerQuiz(${idx})">${opt}</div>`;
+            });
+            document.getElementById('quiz-options').innerHTML = html;
+        }
+        function answerQuiz(idx) {
+            if (idx === questions[quizIndex].correct) {
+                quizScore++;
+                document.getElementById('quiz-result').innerText = 'Правильно!';
+                triggerGlitch();
+            } else {
+                document.getElementById('quiz-result').innerText = 'Неверно.';
+            }
+            quizIndex++;
+            setTimeout(showQuestion, 1000);
+        }
+        function closeQuiz() { document.getElementById('quiz-modal').style.display = 'none'; }
+
+        // ---- ТАБЛИЦА РЕКОРДОВ ----
+        function showLeaderboard() {
+            let list = document.getElementById('leaderboard-list');
+            list.innerHTML = '';
+            leaderboard.forEach((s, i) => {
+                list.innerHTML += `<li>${i+1}. ${s} LY</li>`;
+            });
+            document.getElementById('leaderboard-modal').style.display = 'flex';
+        }
+        function closeLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'none'; }
+
+        // ---- СЕКРЕТНЫЙ АРХИВ ----
+        function recordSecretClick(element) {
+            secretCode.push(element);
+            if (secretCode.length > expectedCode.length) secretCode.shift();
+            if (secretCode.join('') === expectedCode.join('')) {
+                document.getElementById('secret-archive').style.display = 'block';
+                secretCode = [];
+            }
+        }
+        function closeSecret() { document.getElementById('secret-archive').style.display = 'none'; }
+
+        // ---- РАСШИРЕННЫЙ ТЕРМИНАЛ ----
+        function handleExtendedCommand(cmd) {
+            if (cmd === '/library') { showEncyclopedia(); return true; }
+            if (cmd === '/quiz') { startQuiz(); return true; }
+            if (cmd === '/coords') { spawnAlert(`СЛУЧАЙНЫЕ КООРДИНАТЫ: ${(Math.random()*360).toFixed(2)}° / ${(Math.random()*180-90).toFixed(2)}°`); return true; }
+            if (cmd === '/init') { spawnAlert("ВОСПРОИЗВЕДЕНИЕ ВИДЕО: СТАРТ РАКЕТЫ... (симуляция)"); return true; }
+            if (cmd === '/debug') { document.body.classList.toggle('debug-mode'); return true; }
+            return false;
+        }
+
+        document.getElementById('cmd-input').removeEventListener('keydown', oldCmdHandler);
         document.getElementById('cmd-input').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const val = this.value.toLowerCase();
                 this.value = '';
-                if (val === '/status') spawnAlert("ALL SYSTEMS NOMINAL");
-                else if (val === '/play') startGame();
-                else if (val === '/clear') alertContainer.innerHTML = '';
+                if (!handleExtendedCommand(val)) {
+                    if (val === '/status') spawnAlert("ВСЕ СИСТЕМЫ НОМИНАЛЬНЫ");
+                    else if (val === '/play') startGame();
+                    else if (val === '/clear') alertContainer.innerHTML = '';
+                }
             }
         });
 
-        setInterval(() => { document.getElementById('mission-clock').innerText = new Date().toLocaleTimeString('en-GB'); }, 1000);
-        window.onload = () => typeWriter("hero-type", "NASA TERMINAL v8.9 // СВЯЗЬ УСТАНОВЛЕНА // ГОТОВ К РАБОТЕ");
+        // ---- ПАСХАЛКА ----
+        document.querySelector('.glass:first-child').addEventListener('click', () => recordSecretClick('Туманности'));
+        document.querySelector('.glass:last-child').addEventListener('click', () => recordSecretClick('Экзопланеты'));
+        document.querySelector('h1 .clickable-word').addEventListener('click', () => recordSecretClick('Explorer'));
+        document.querySelector('h1').addEventListener('click', (e) => {
+            if (e.target.classList.contains('clickable-word')) return;
+            recordSecretClick('Orbital');
+        });
 
-        function resizeGameCanvas() {
-            if (canvas) {
-                canvas.width = 600;
-                canvas.height = 400;
+        // ---- ГОЛОСОВОЕ УПРАВЛЕНИЕ ----
+/*
+// ---- ГОЛОСОВОЕ УПРАВЛЕНИЕ ----
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    ...
+}
+*/
+
+        // ---- RESIZE ДЛЯ СЦЕН ----
+        window.addEventListener('resize', () => {
+            if (constCamera && constRenderer) {
+                constCamera.aspect = window.innerWidth / window.innerHeight;
+                constCamera.updateProjectionMatrix();
+                constRenderer.setSize(window.innerWidth, window.innerHeight);
             }
+            if (solarCamera && solarRenderer) {
+                solarCamera.aspect = window.innerWidth / window.innerHeight;
+                solarCamera.updateProjectionMatrix();
+                solarRenderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // ---- ПЛАВНЫЙ ПЕРЕХОД ----
+        const transitionOverlay = document.getElementById('transition-overlay');
+
+        function transitionTo(callback) {
+            if (!transitionOverlay) return;
+            if (transitionOverlay.style.left === '0%') return;
+            transitionOverlay.style.left = '0%';
+            setTimeout(() => {
+                callback();
+                setTimeout(() => {
+                    transitionOverlay.style.left = '-100%';
+                }, 100);
+            }, 500);
         }
-        window.addEventListener('resize', resizeGameCanvas);
-        resizeGameCanvas();
+
+        const originalShowStarMap = showStarMap;
+        showStarMap = function() {
+            if (document.getElementById('star-map').style.display === 'block') return;
+            transitionTo(() => { originalShowStarMap(); });
+        };
+
+        const originalShow3DMap = show3DMap;
+        show3DMap = function() {
+            if (document.getElementById('constellation-view').style.display === 'block') return;
+            transitionTo(() => { originalShow3DMap(); });
+        };
+
+        const originalShowSolarSystem = showSolarSystem;
+        showSolarSystem = function() {
+            if (document.getElementById('solar-view').style.display === 'block') return;
+            transitionTo(() => { originalShowSolarSystem(); });
+        };
     </script>
 </body>
 </html>
