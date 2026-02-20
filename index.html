@@ -180,6 +180,45 @@
             aspect-ratio: 600 / 400;
         }
 
+        /* МОБИЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ */
+        .mobile-controls {
+            display: none; /* по умолчанию скрыты, включаются медиа-запросом */
+            position: fixed;
+            bottom: 80px; /* выше кнопки Abort Mission */
+            left: 0;
+            width: 100%;
+            justify-content: center;
+            gap: 20px;
+            z-index: 9000;
+            pointer-events: none; /* чтобы клики проходили сквозь контейнер, но не сквозь кнопки */
+        }
+        .mobile-controls button {
+            pointer-events: auto; /* кнопки кликабельны */
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            background: rgba(0, 10, 20, 0.8);
+            border: 2px solid #3b82f6;
+            color: #3b82f6;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: manipulation;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(59,130,246,0.3);
+            transition: all 0.1s ease;
+        }
+        .mobile-controls button:active {
+            background: #3b82f6;
+            color: black;
+            transform: scale(1.1);
+        }
+        @media (max-width: 640px) {
+            .mobile-controls { display: flex; }
+        }
+
         /* МОБИЛЬНАЯ АДАПТАЦИЯ */
         @media (min-width: 640px) {
             #cursor, #coords { display: block; }
@@ -259,6 +298,13 @@
             <span id="live-score" class="text-white">DISTANCE: 0 LY</span>
         </div>
         <canvas id="game-canvas" width="600" height="400"></canvas>
+        <!-- Мобильные кнопки управления -->
+        <div class="mobile-controls">
+            <button class="ctrl-btn up" data-dir="up" aria-label="up">▲</button>
+            <button class="ctrl-btn left" data-dir="left" aria-label="left">◀</button>
+            <button class="ctrl-btn down" data-dir="down" aria-label="down">▼</button>
+            <button class="ctrl-btn right" data-dir="right" aria-label="right">▶</button>
+        </div>
         <button onclick="closeGame()" class="mt-4 border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white font-mono text-xs uppercase transition-colors">
             [ Abort Mission ]
         </button>
@@ -331,7 +377,7 @@
         const alertContainer = document.getElementById('alert-container');
         let scene, camera, renderer, currentObject, planetRing, stars, nebulaParticles, audioEnabled = false;
 
-        // --- ЛОГИКА МИНИ-ИГРЫ (ОБНОВЛЕННАЯ С АДАПТИВНЫМ CANVAS) ---
+        // --- ЛОГИКА МИНИ-ИГРЫ (ОБНОВЛЕННАЯ С АДАПТИВНЫМ CANVAS И ТАЧ-УПРАВЛЕНИЕМ) ---
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         let gameActive = false;
@@ -341,7 +387,64 @@
         let keys = {};
         let gameLoopId;
 
-        // Обработка клавиш с предотвращением дефолтных действий
+        // --- ОБРАБОТЧИКИ ДЛЯ МОБИЛЬНЫХ КНОПОК ---
+        function setupMobileControls() {
+            const ctrlUp = document.querySelector('.ctrl-btn.up');
+            const ctrlDown = document.querySelector('.ctrl-btn.down');
+            const ctrlLeft = document.querySelector('.ctrl-btn.left');
+            const ctrlRight = document.querySelector('.ctrl-btn.right');
+
+            // Функция обновления состояния клавиш (только если игра активна)
+            function setKey(code, state, e) {
+                if (e) e.preventDefault(); // предотвращаем действия браузера
+                if (gameActive) {
+                    keys[code] = state;
+                }
+            }
+
+            // Touch события
+            ctrlUp.addEventListener('touchstart', (e) => setKey('ArrowUp', true, e));
+            ctrlUp.addEventListener('touchend', (e) => setKey('ArrowUp', false, e));
+            ctrlUp.addEventListener('touchcancel', (e) => setKey('ArrowUp', false, e));
+
+            ctrlDown.addEventListener('touchstart', (e) => setKey('ArrowDown', true, e));
+            ctrlDown.addEventListener('touchend', (e) => setKey('ArrowDown', false, e));
+            ctrlDown.addEventListener('touchcancel', (e) => setKey('ArrowDown', false, e));
+
+            ctrlLeft.addEventListener('touchstart', (e) => setKey('ArrowLeft', true, e));
+            ctrlLeft.addEventListener('touchend', (e) => setKey('ArrowLeft', false, e));
+            ctrlLeft.addEventListener('touchcancel', (e) => setKey('ArrowLeft', false, e));
+
+            ctrlRight.addEventListener('touchstart', (e) => setKey('ArrowRight', true, e));
+            ctrlRight.addEventListener('touchend', (e) => setKey('ArrowRight', false, e));
+            ctrlRight.addEventListener('touchcancel', (e) => setKey('ArrowRight', false, e));
+
+            // Для отладки на десктопе (мышь)
+            ctrlUp.addEventListener('mousedown', (e) => setKey('ArrowUp', true, e));
+            ctrlUp.addEventListener('mouseup', (e) => setKey('ArrowUp', false, e));
+            ctrlUp.addEventListener('mouseleave', (e) => setKey('ArrowUp', false, e));
+
+            ctrlDown.addEventListener('mousedown', (e) => setKey('ArrowDown', true, e));
+            ctrlDown.addEventListener('mouseup', (e) => setKey('ArrowDown', false, e));
+            ctrlDown.addEventListener('mouseleave', (e) => setKey('ArrowDown', false, e));
+
+            ctrlLeft.addEventListener('mousedown', (e) => setKey('ArrowLeft', true, e));
+            ctrlLeft.addEventListener('mouseup', (e) => setKey('ArrowLeft', false, e));
+            ctrlLeft.addEventListener('mouseleave', (e) => setKey('ArrowLeft', false, e));
+
+            ctrlRight.addEventListener('mousedown', (e) => setKey('ArrowRight', true, e));
+            ctrlRight.addEventListener('mouseup', (e) => setKey('ArrowRight', false, e));
+            ctrlRight.addEventListener('mouseleave', (e) => setKey('ArrowRight', false, e));
+        }
+
+        // Вызываем после загрузки DOM
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupMobileControls);
+        } else {
+            setupMobileControls();
+        }
+
+        // Обработка клавиатуры (оставляем как есть)
         window.addEventListener('keydown', e => { 
             if (gameActive && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
                 e.preventDefault(); 
@@ -352,13 +455,12 @@
 
         function startGame() {
             closeVoyagerLog();
-            // Скрываем лишние UI элементы
             document.getElementById('star-map').style.display = 'none';
             document.getElementById('space-view').style.display = 'none';
             
             const container = document.getElementById('game-container');
             container.style.display = 'flex';
-            container.focus(); // Захватываем фокус
+            container.focus();
             
             // Сброс состояния
             gameActive = true;
@@ -375,16 +477,14 @@
         function updateGame() {
             if (!gameActive) return;
 
-            // Управление (поддержка стрелок и WASD)
+            // Управление (клавиши + мобильные кнопки уже влияют на keys)
             if ((keys['KeyW'] || keys['ArrowUp']) && player.y > player.size) player.y -= player.speed;
             if ((keys['KeyS'] || keys['ArrowDown']) && player.y < canvas.height - player.size) player.y += player.speed;
             if ((keys['KeyA'] || keys['ArrowLeft']) && player.x > player.size) player.x -= player.speed;
             if ((keys['KeyD'] || keys['ArrowRight']) && player.x < canvas.width - player.size) player.x += player.speed;
 
-            // Обновление счета в UI
             document.getElementById('live-score').innerText = `DISTANCE: ${score * 100} LY`;
 
-            // Спавн астероидов
             let spawnChance = 0.05 + (score * 0.0005);
             if (Math.random() < Math.min(spawnChance, 0.2)) {
                 asteroids.push({
@@ -405,7 +505,6 @@
                     continue;
                 }
 
-                // Хитбокс
                 let dx = player.x - ast.x;
                 let dy = player.y - ast.y;
                 let distance = Math.sqrt(dx * dx + dy * dy);
@@ -463,6 +562,8 @@
             gameActive = false;
             cancelAnimationFrame(gameLoopId);
             document.getElementById('game-container').style.display = 'none';
+            // Сбрасываем клавиши, чтобы зонд не двигался после закрытия
+            keys = {};
         }
 
         // --- ОСТАЛЬНЫЕ СИСТЕМНЫЕ ФУНКЦИИ ---
@@ -611,10 +712,8 @@
         setInterval(() => { document.getElementById('mission-clock').innerText = new Date().toLocaleTimeString('en-GB'); }, 1000);
         window.onload = () => typeWriter("hero-type", "NASA TERMINAL v8.9 // СВЯЗЬ УСТАНОВЛЕНА // ГОТОВ К РАБОТЕ");
 
-        // Адаптация canvas игры под размер экрана (сохраняем пропорции)
         function resizeGameCanvas() {
             if (canvas) {
-                // Сохраняем исходные размеры canvas для логики игры
                 canvas.width = 600;
                 canvas.height = 400;
             }
