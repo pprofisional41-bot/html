@@ -7,6 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="stylesheet" href="stylee.css">
+    <style>
+        /* Дополнительные мобильные оптимизации */
+        @media (max-width: 640px) {
+            .hud-item { font-size: 10px !important; }
+            #top-hud { padding: 0 10px; height: 50px; }
+            .glass { border-radius: 20px; }
+            h1 { font-size: 3.5rem; }
+            .telemetry-overlay { left: 10px; width: calc(100% - 20px); max-width: 280px; font-size: 12px; }
+            #cmd-terminal { padding: 8px 12px; }
+            #cmd-input { font-size: 14px; }
+            .modal-content { padding: 15px; }
+            .modal-content h2 { font-size: 20px; }
+            .modal-content button { padding: 12px 20px; font-size: 14px; }
+            #game-canvas { max-width: 100%; }
+            .mobile-controls button { width: 70px; height: 70px; font-size: 36px; }
+            .const-info, .solar-info { font-size: 12px; max-width: 250px; }
+        }
+        /* Улучшение для очень маленьких экранов */
+        @media (max-width: 380px) {
+            h1 { font-size: 2.8rem; }
+            .glass p { font-size: 10px; }
+            .mobile-controls button { width: 60px; height: 60px; font-size: 30px; }
+        }
+    </style>
 </head>
 <body onclick="triggerGlitch()">
 
@@ -33,7 +57,7 @@
     <div id="grid-container"><div id="grid-overlay"></div></div>
     <div id="alert-container"></div>
 
-    <!-- ТЕКСТОВАЯ КАРТА (оставлена для совместимости) -->
+    <!-- ТЕКСТОВАЯ КАРТА -->
     <div id="star-map" onclick="event.stopPropagation();">
         <div class="flex flex-wrap justify-between items-center mb-5 border-b border-blue-500 pb-3">
             <h2 class="text-xl sm:text-3xl font-black italic text-white">CONSTELLATION NAVIGATOR</h2>
@@ -61,14 +85,14 @@
         </div>
     </div>
 
-    <!-- 3D КАРТА СОЗВЕЗДИЙ (расширенная) -->
+    <!-- 3D КАРТА СОЗВЕЗДИЙ -->
     <div id="constellation-view">
         <div id="const-canvas"></div>
         <div class="const-info" id="const-info">Нажмите на звезду или линию созвездия, чтобы увидеть информацию.</div>
         <button onclick="closeConstellationMap()" class="absolute bottom-5 right-5 border border-red-500 px-4 py-2 text-red-500 hover:bg-red-500 hover:text-white">[ ЗАКРЫТЬ ]</button>
     </div>
 
-    <!-- СОЛНЕЧНАЯ СИСТЕМА (детализированная, с русским языком) -->
+    <!-- СОЛНЕЧНАЯ СИСТЕМА -->
     <div id="solar-view">
         <div id="solar-canvas"></div>
         <div class="solar-info" id="solar-info">Нажмите на планету, чтобы увидеть информацию.</div>
@@ -97,7 +121,7 @@
         </button>
     </div>
 
-    <!-- СТАРЫЙ 3D РЕЖИМ (ТУМАННОСТИ/ЭКЗОПЛАНЕТЫ) -->
+    <!-- СТАРЫЙ 3D РЕЖИМ -->
     <div id="space-view" onclick="event.stopPropagation();">
         <div class="telemetry-overlay">
             <h3 id="mode-title" class="text-base sm:text-lg font-bold border-b border-blue-500 mb-2">SCANNER_V3</h3>
@@ -294,8 +318,7 @@
             spawnAlert("РУЧНОЕ ПИЛОТИРОВАНИЕ АКТИВИРОВАНО");
         }
 
-        // Заглушки
-        function updateGame() { /* заглушка */ }
+        function updateGame() { /* заглушка (будет заменена) */ }
         function drawGame() { /* заглушка */ }
 
         function gameLoop() {
@@ -451,7 +474,6 @@
             coords.style.left = (e.clientX + 20) + 'px'; coords.style.top = (e.clientY + 20) + 'px';
         });
 
-        // Старый обработчик терминала
         const oldCmdHandler = function(e) {
             if (e.key === 'Enter') {
                 const val = this.value.toLowerCase();
@@ -475,7 +497,6 @@
         // ==================== НОВЫЙ КОД: РАСШИРЕНИЯ ====================
 
         // ---- ПЕРЕМЕННЫЕ ДЛЯ НОВЫХ ФУНКЦИЙ ----
-// ---- ПЕРЕМЕННЫЕ ДЛЯ НОВЫХ ФУНКЦИЙ ----
         let constScene, constCamera, constRenderer;
         let solarScene, solarCamera, solarRenderer, planets = [];
         let raycaster = new THREE.Raycaster();
@@ -634,7 +655,7 @@
             originalEndGame();
         };
 
-        // ---- 3D КАРТА СОЗВЕЗДИЙ (РАСШИРЕННАЯ, РУССКИЙ ЯЗЫК) ----
+        // ---- 3D КАРТА СОЗВЕЗДИЙ (РАЗНЕСЁННАЯ) ----
         function show3DMap() {
             document.getElementById('constellation-view').style.display = 'block';
             if (!constScene) initConstellationMap();
@@ -642,143 +663,140 @@
         function closeConstellationMap() {
             document.getElementById('constellation-view').style.display = 'none';
         }
-function initConstellationMap() {
-    const container = document.getElementById('const-canvas');
-    while (container.firstChild) container.removeChild(container.firstChild);
-    
-    constScene = new THREE.Scene();
-    constScene.background = new THREE.Color(0x050b1c);
-    
-    constCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    constCamera.position.set(0, 5, 40);
-    constCamera.lookAt(0, 0, 0);
-    
-    constRenderer = new THREE.WebGLRenderer({ antialias: true });
-    constRenderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(constRenderer.domElement);
+        function initConstellationMap() {
+            const container = document.getElementById('const-canvas');
+            while (container.firstChild) container.removeChild(container.firstChild);
+            
+            constScene = new THREE.Scene();
+            constScene.background = new THREE.Color(0x050b1c);
+            
+            constCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            constCamera.position.set(0, 5, 40);
+            constCamera.lookAt(0, 0, 0);
+            
+            constRenderer = new THREE.WebGLRenderer({ antialias: true });
+            constRenderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(constRenderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x404060);
-    constScene.add(ambientLight);
-    const light = new THREE.PointLight(0xffffff, 1);
-    light.position.set(10, 10, 10);
-    constScene.add(light);
+            const ambientLight = new THREE.AmbientLight(0x404060);
+            constScene.add(ambientLight);
+            const light = new THREE.PointLight(0xffffff, 1);
+            light.position.set(10, 10, 10);
+            constScene.add(light);
 
-    // Звёзды фона (разнесены дальше)
-    const starsGeo = new THREE.BufferGeometry();
-    const starsPos = [];
-    for (let i = 0; i < 3000; i++) {
-        const r = 40 + Math.random() * 30;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        const x = r * Math.sin(phi) * Math.cos(theta);
-        const y = r * Math.sin(phi) * Math.sin(theta);
-        const z = r * Math.cos(phi);
-        starsPos.push(x, y, z);
-    }
-    starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPos, 3));
-    const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 });
-    const constStars = new THREE.Points(starsGeo, starsMat);
-    constScene.add(constStars);
+            // Звёзды фона
+            const starsGeo = new THREE.BufferGeometry();
+            const starsPos = [];
+            for (let i = 0; i < 3000; i++) {
+                const r = 40 + Math.random() * 30;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.sin(phi) * Math.sin(theta);
+                const z = r * Math.cos(phi);
+                starsPos.push(x, y, z);
+            }
+            starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPos, 3));
+            const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.15 });
+            const constStars = new THREE.Points(starsGeo, starsMat);
+            constScene.add(constStars);
 
-    // Локальные координаты для каждого созвездия (центрированы около 0)
-    const constellations = [
-        { 
-            name: 'Орион', 
-            points: [[-1,0.5,0], [-0.5,1,0.3], [0,1,0], [0.5,0.5,-0.3], [1,0,-0.5]],
-            description: 'Орион – охотник. Содержит яркие звёзды Бетельгейзе и Ригель. Связан с мифом о гиганте, убитом скорпионом.'
-        },
-        { 
-            name: 'Большая Медведица', 
-            points: [[0,0,0], [0.8,0.2,0.2], [1.5,0.1,0.4], [2.2,-0.2,0.3], [2.8,-0.5,0.1]],
-            description: 'Большая Медведица – один из самых узнаваемых астеризмов. Семь ярких звёзд образуют ковш.'
-        },
-        { 
-            name: 'Кассиопея', 
-            points: [[0,0,0], [-0.7,0.5,0.3], [0,1,0.5], [0.7,0.5,0.3], [1.4,0,0]],
-            description: 'Кассиопея – созвездие в форме буквы W. Названо в честь мифической царицы.'
-        },
-        { 
-            name: 'Лебедь', 
-            points: [[0,1,0], [0.5,0.5,0.2], [0.8,0,0.1], [0.5,-0.5,-0.1], [0,-1,-0.2], [-0.5,-0.5,-0.1], [-0.8,0,0.1], [-0.5,0.5,0.2]],
-            description: 'Лебедь (Северный Крест) – содержит яркую звезду Денеб. Легенда о Зевсе, превратившемся в лебедя.'
-        },
-        { 
-            name: 'Большой Пёс', 
-            points: [[0,0,0], [0.7,0.2,0.2], [1.4,0,0.3], [2.1,-0.3,0.2], [2.8,-0.6,0]],
-            description: 'Большой Пёс – включает Сириус, самую яркую звезду ночного неба. Сопровождает Ориона в мифах.'
-        },
-        { 
-            name: 'Лира', 
-            points: [[0,0.5,0], [0.4,0.2,0.2], [0.6,-0.3,0.1], [0.2,-0.6,-0.1]],
-            description: 'Лира – маленькое созвездие с яркой звездой Вега. Связано с мифом об Орфее.'
-        },
-        { 
-            name: 'Геркулес', 
-            points: [[0,0.8,0], [0.6,0.4,0.2], [1,0,0.3], [0.8,-0.5,0.2], [0.4,-0.9,0], [-0.2,-0.7,-0.2], [-0.6,-0.2,-0.3], [-0.2,0.4,-0.2]],
-            description: 'Геркулес – большое созвездие, названное в честь римского героя. Содержит шаровое скопление M13.'
-        },
-        { 
-            name: 'Дракон', 
-            points: [[0,0.6,0], [0.7,0.3,0.3], [1.2,-0.2,0.5], [1.5,-0.8,0.4], [1.2,-1.4,0.2], [0.6,-1.7,0], [-0.1,-1.5,-0.2], [-0.8,-1.0,-0.4]],
-            description: 'Дракон – извивающееся созвездие вокруг Северного полюса мира. В мифах охранял золотые яблоки.'
+            // Локальные координаты для каждого созвездия
+            const constellations = [
+                { 
+                    name: 'Орион', 
+                    points: [[-1,0.5,0], [-0.5,1,0.3], [0,1,0], [0.5,0.5,-0.3], [1,0,-0.5]],
+                    description: 'Орион – охотник. Содержит яркие звёзды Бетельгейзе и Ригель. Связан с мифом о гиганте, убитом скорпионом.'
+                },
+                { 
+                    name: 'Большая Медведица', 
+                    points: [[0,0,0], [0.8,0.2,0.2], [1.5,0.1,0.4], [2.2,-0.2,0.3], [2.8,-0.5,0.1]],
+                    description: 'Большая Медведица – один из самых узнаваемых астеризмов. Семь ярких звёзд образуют ковш.'
+                },
+                { 
+                    name: 'Кассиопея', 
+                    points: [[0,0,0], [-0.7,0.5,0.3], [0,1,0.5], [0.7,0.5,0.3], [1.4,0,0]],
+                    description: 'Кассиопея – созвездие в форме буквы W. Названо в честь мифической царицы.'
+                },
+                { 
+                    name: 'Лебедь', 
+                    points: [[0,1,0], [0.5,0.5,0.2], [0.8,0,0.1], [0.5,-0.5,-0.1], [0,-1,-0.2], [-0.5,-0.5,-0.1], [-0.8,0,0.1], [-0.5,0.5,0.2]],
+                    description: 'Лебедь (Северный Крест) – содержит яркую звезду Денеб. Легенда о Зевсе, превратившемся в лебедя.'
+                },
+                { 
+                    name: 'Большой Пёс', 
+                    points: [[0,0,0], [0.7,0.2,0.2], [1.4,0,0.3], [2.1,-0.3,0.2], [2.8,-0.6,0]],
+                    description: 'Большой Пёс – включает Сириус, самую яркую звезду ночного неба. Сопровождает Ориона в мифах.'
+                },
+                { 
+                    name: 'Лира', 
+                    points: [[0,0.5,0], [0.4,0.2,0.2], [0.6,-0.3,0.1], [0.2,-0.6,-0.1]],
+                    description: 'Лира – маленькое созвездие с яркой звездой Вега. Связано с мифом об Орфее.'
+                },
+                { 
+                    name: 'Геркулес', 
+                    points: [[0,0.8,0], [0.6,0.4,0.2], [1,0,0.3], [0.8,-0.5,0.2], [0.4,-0.9,0], [-0.2,-0.7,-0.2], [-0.6,-0.2,-0.3], [-0.2,0.4,-0.2]],
+                    description: 'Геркулес – большое созвездие, названное в честь римского героя. Содержит шаровое скопление M13.'
+                },
+                { 
+                    name: 'Дракон', 
+                    points: [[0,0.6,0], [0.7,0.3,0.3], [1.2,-0.2,0.5], [1.5,-0.8,0.4], [1.2,-1.4,0.2], [0.6,-1.7,0], [-0.1,-1.5,-0.2], [-0.8,-1.0,-0.4]],
+                    description: 'Дракон – извивающееся созвездие вокруг Северного полюса мира. В мифах охранял золотые яблоки.'
+                }
+            ];
+
+            // Размещаем созвездия на сфере радиуса 22
+            const radius = 22;
+            const angles = constellations.map((_, i) => (i / constellations.length) * Math.PI * 2);
+
+            constellations.forEach((c, index) => {
+                const angle = angles[index];
+                const centerX = radius * Math.cos(angle);
+                const centerZ = radius * Math.sin(angle);
+                const centerY = (Math.random() - 0.5) * 5;
+
+                const points = c.points.map(p => new THREE.Vector3(
+                    centerX + p[0] * 2.5,
+                    centerY + p[1] * 2.5,
+                    centerZ + p[2] * 2.5
+                ));
+
+                const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const lineMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+                const line = new THREE.Line(lineGeo, lineMat);
+                line.userData = { name: c.name, description: c.description };
+                constScene.add(line);
+
+                points.forEach(pos => {
+                    const sphereGeo = new THREE.SphereGeometry(0.25, 8, 8);
+                    const sphereMat = new THREE.MeshStandardMaterial({ color: 0xffaa55 });
+                    const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                    sphere.position.copy(pos);
+                    sphere.userData = { name: c.name, description: c.description };
+                    constScene.add(sphere);
+                });
+            });
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            container.style.touchAction = 'none';
+            container.addEventListener('click', onClickConstellation);
+            
+            let touchStartX = 0;
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            });
+            container.addEventListener('touchend', (e) => {
+                if (!touchStartX) return;
+                let dx = e.changedTouches[0].clientX - touchStartX;
+                if (Math.abs(dx) > 30) {
+                    constScene.rotation.y += dx * 0.005;
+                }
+            });
+
+            animateConst();
         }
-    ];
-
-    // Размещаем созвездия на сфере радиуса 22
-    const radius = 22;
-    const angles = constellations.map((_, i) => (i / constellations.length) * Math.PI * 2);
-
-    constellations.forEach((c, index) => {
-        const angle = angles[index];
-        const centerX = radius * Math.cos(angle);
-        const centerZ = radius * Math.sin(angle);
-        const centerY = (Math.random() - 0.5) * 5; // небольшой разброс по высоте
-
-        // Масштабируем локальные точки и смещаем к центру созвездия
-        const points = c.points.map(p => new THREE.Vector3(
-            centerX + p[0] * 2.5,
-            centerY + p[1] * 2.5,
-            centerZ + p[2] * 2.5
-        ));
-
-        // Линии
-        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
-        const line = new THREE.Line(lineGeo, lineMat);
-        line.userData = { name: c.name, description: c.description };
-        constScene.add(line);
-
-        // Звёзды-метки
-        points.forEach(pos => {
-            const sphereGeo = new THREE.SphereGeometry(0.25, 8, 8);
-            const sphereMat = new THREE.MeshStandardMaterial({ color: 0xffaa55 });
-            const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-            sphere.position.copy(pos);
-            sphere.userData = { name: c.name, description: c.description };
-            constScene.add(sphere);
-        });
-    });
-
-    raycaster = new THREE.Raycaster();
-    mouse = new THREE.Vector2();
-
-    container.style.touchAction = 'none';
-    container.addEventListener('click', onClickConstellation);
-    
-    let touchStartX = 0;
-    container.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-    });
-    container.addEventListener('touchend', (e) => {
-        if (!touchStartX) return;
-        let dx = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(dx) > 30) {
-            constScene.rotation.y += dx * 0.005;
-        }
-    });
-
-    animateConst();
-}
         function animateConst() {
             requestAnimationFrame(animateConst);
             if (constScene && constRenderer) {
@@ -807,188 +825,190 @@ function initConstellationMap() {
         function closeSolarSystem() {
             document.getElementById('solar-view').style.display = 'none';
         }
-function initSolarSystem() {
-    const container = document.getElementById('solar-canvas');
-    while (container.firstChild) container.removeChild(container.firstChild);
+        function initSolarSystem() {
+            const container = document.getElementById('solar-canvas');
+            while (container.firstChild) container.removeChild(container.firstChild);
 
-    solarScene = new THREE.Scene();
-    solarScene.background = new THREE.Color(0x050b1c);
+            solarScene = new THREE.Scene();
+            solarScene.background = new THREE.Color(0x050b1c);
 
-    solarCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-    solarCamera.position.set(0, 20, 50);
-    solarCamera.lookAt(0, 0, 0);
+            solarCamera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            solarCamera.position.set(0, 20, 50);
+            solarCamera.lookAt(0, 0, 0);
 
-    solarRenderer = new THREE.WebGLRenderer({ antialias: true });
-    solarRenderer.setSize(window.innerWidth, window.innerHeight);
-    container.appendChild(solarRenderer.domElement);
+            solarRenderer = new THREE.WebGLRenderer({ antialias: true });
+            solarRenderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(solarRenderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0x404060);
-    solarScene.add(ambientLight);
-    const sunLight = new THREE.PointLight(0xffaa55, 2, 70);
-    sunLight.position.set(0, 0, 0);
-    solarScene.add(sunLight);
+            const ambientLight = new THREE.AmbientLight(0x404060);
+            solarScene.add(ambientLight);
+            const sunLight = new THREE.PointLight(0xffaa55, 2, 70);
+            sunLight.position.set(0, 0, 0);
+            solarScene.add(sunLight);
 
-    // Солнце (теперь с userData для клика)
-    const sunGeo = new THREE.SphereGeometry(3, 64, 64);
-    const sunMat = new THREE.MeshStandardMaterial({ 
-        color: 0xffaa00, 
-        emissive: 0x442200,
-        emissiveIntensity: 2
-    });
-    const sun = new THREE.Mesh(sunGeo, sunMat);
-    sun.userData = { 
-        name: 'Солнце', 
-        info: 'Масса: 1.99×10^30 кг<br>Температура поверхности: 5500°C<br>Состоит из водорода (74%) и гелия (24%)',
-        distance: 0,
-        speed: 0,
-        angle: 0
-    };
-    solarScene.add(sun);
-    planets.push(sun); // Добавляем Солнце в массив кликабельных планет
+            // Солнце (теперь с userData для клика)
+            const sunGeo = new THREE.SphereGeometry(3, 64, 64);
+            const sunMat = new THREE.MeshStandardMaterial({ 
+                color: 0xffaa00, 
+                emissive: 0x442200,
+                emissiveIntensity: 2
+            });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.userData = { 
+                name: 'Солнце', 
+                info: 'Масса: 1.99×10^30 кг<br>Температура поверхности: 5500°C<br>Состоит из водорода (74%) и гелия (24%)',
+                distance: 0,
+                speed: 0,
+                angle: 0
+            };
+            solarScene.add(sun);
+            planets.push(sun);
 
-    // Процедурные текстуры планет (улучшенные)
-    function createPlanetTexture(baseColor, hasStripes = false, hasSpot = false, isEarth = false, isMars = false) {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1024;
-        canvas.height = 1024;
-        const ctx = canvas.getContext('2d');
-        
-        ctx.fillStyle = baseColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        if (hasStripes) {
-            ctx.strokeStyle = '#b08968';
-            ctx.lineWidth = 60;
-            for (let i = 0; i < 12; i++) {
-                const y = i * 120 + 40;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y + 50);
-                ctx.stroke();
+            // Процедурные текстуры планет
+            function createPlanetTexture(baseColor, hasStripes = false, hasSpot = false, isEarth = false, isMars = false) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+                
+                ctx.fillStyle = baseColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                if (hasStripes) {
+                    ctx.strokeStyle = '#b08968';
+                    ctx.lineWidth = 60;
+                    for (let i = 0; i < 12; i++) {
+                        const y = i * 120 + 40;
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(canvas.width, y + 50);
+                        ctx.stroke();
+                    }
+                }
+                if (hasSpot) {
+                    ctx.fillStyle = '#8b0000';
+                    ctx.beginPath();
+                    ctx.ellipse(700, 400, 200, 150, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                if (isEarth) {
+                    ctx.fillStyle = '#228822';
+                    ctx.beginPath();
+                    ctx.ellipse(300, 200, 150, 100, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#22aa22';
+                    ctx.beginPath();
+                    ctx.ellipse(700, 600, 200, 150, 0.2, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.fillStyle = '#226622';
+                    ctx.beginPath();
+                    ctx.ellipse(500, 800, 120, 80, -0.1, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                if (isMars) {
+                    ctx.fillStyle = '#552222';
+                    ctx.beginPath();
+                    ctx.ellipse(400, 300, 200, 150, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    for (let i=0; i<100; i++) {
+                        ctx.fillStyle = '#aaaaaa';
+                        ctx.beginPath();
+                        ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, 5+Math.random()*15, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+                if (!hasStripes && !isEarth && !isMars) {
+                    for (let i = 0; i < 100; i++) {
+                        ctx.fillStyle = 'rgba(200,200,200,0.5)';
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 5 + Math.random() * 15, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                return texture;
             }
-        }
-        if (hasSpot) {
-            ctx.fillStyle = '#8b0000';
-            ctx.beginPath();
-            ctx.ellipse(700, 400, 200, 150, 0, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        if (isEarth) {
-            // Имитация континентов
-            ctx.fillStyle = '#228822';
-            ctx.beginPath();
-            ctx.ellipse(300, 200, 150, 100, 0, 0, Math.PI*2);
-            ctx.fill();
-            ctx.fillStyle = '#22aa22';
-            ctx.beginPath();
-            ctx.ellipse(700, 600, 200, 150, 0.2, 0, Math.PI*2);
-            ctx.fill();
-            ctx.fillStyle = '#226622';
-            ctx.beginPath();
-            ctx.ellipse(500, 800, 120, 80, -0.1, 0, Math.PI*2);
-            ctx.fill();
-        }
-        if (isMars) {
-            // Тёмные области и кратеры
-            ctx.fillStyle = '#552222';
-            ctx.beginPath();
-            ctx.ellipse(400, 300, 200, 150, 0, 0, Math.PI*2);
-            ctx.fill();
-            for (let i=0; i<100; i++) {
-                ctx.fillStyle = '#aaaaaa';
-                ctx.beginPath();
-                ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, 5+Math.random()*15, 0, Math.PI*2);
-                ctx.fill();
-            }
-        }
-        if (!hasStripes && !isEarth && !isMars) {
-            for (let i = 0; i < 100; i++) {
-                ctx.fillStyle = 'rgba(200,200,200,0.5)';
-                ctx.beginPath();
-                ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 5 + Math.random() * 15, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        return texture;
-    }
 
-    const planetData = [
-        { name: 'Меркурий', radius: 0.6, distance: 5, color: '#aaaaaa', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.02, info: 'Масса: 0.33×10^24 кг<br>Атмосфера: разреженная' },
-        { name: 'Венера', radius: 0.8, distance: 8, color: '#ffcc88', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.015, info: 'Масса: 4.87×10^24 кг<br>Атмосфера: CO2, облака серной кислоты' },
-        { name: 'Земля', radius: 0.85, distance: 11, color: '#2288ff', hasStripes: false, hasSpot: false, isEarth: true, isMars: false, speed: 0.01, info: 'Масса: 5.97×10^24 кг<br>Атмосфера: N2/O2, единственная известная жизнь' },
-        { name: 'Марс', radius: 0.7, distance: 14, color: '#ff6633', hasStripes: false, hasSpot: false, isEarth: false, isMars: true, speed: 0.008, info: 'Масса: 0.64×10^24 кг<br>Атмосфера: CO2, есть вода в виде льда' },
-        { name: 'Юпитер', radius: 1.8, distance: 18, color: '#ddbb99', hasStripes: true, hasSpot: true, isEarth: false, isMars: false, speed: 0.005, info: 'Масса: 1898×10^24 кг<br>Атмосфера: H2/He, Большое красное пятно' },
-        { name: 'Сатурн', radius: 1.5, distance: 22, color: '#eeddbb', hasStripes: true, hasSpot: false, isEarth: false, isMars: false, speed: 0.004, info: 'Масса: 568×10^24 кг<br>Имеет кольца из льда и пыли', hasRing: true },
-        { name: 'Уран', radius: 1.2, distance: 26, color: '#88ccff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.003, info: 'Масса: 86.8×10^24 кг<br>Атмосфера: H2/He/CH4, вращается на боку' },
-        { name: 'Нептун', radius: 1.2, distance: 30, color: '#3366ff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.002, info: 'Масса: 102×10^24 кг<br>Атмосфера: H2/He/CH4, сильные ветры' }
-    ];
+            const planetData = [
+                { name: 'Меркурий', radius: 0.6, distance: 5, color: '#aaaaaa', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.02, info: 'Масса: 0.33×10^24 кг<br>Атмосфера: разреженная' },
+                { name: 'Венера', radius: 0.8, distance: 8, color: '#ffcc88', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.015, info: 'Масса: 4.87×10^24 кг<br>Атмосфера: CO2, облака серной кислоты' },
+                { name: 'Земля', radius: 0.85, distance: 11, color: '#2288ff', hasStripes: false, hasSpot: false, isEarth: true, isMars: false, speed: 0.01, info: 'Масса: 5.97×10^24 кг<br>Атмосфера: N2/O2, единственная известная жизнь' },
+                { name: 'Марс', radius: 0.7, distance: 14, color: '#ff6633', hasStripes: false, hasSpot: false, isEarth: false, isMars: true, speed: 0.008, info: 'Масса: 0.64×10^24 кг<br>Атмосфера: CO2, есть вода в виде льда' },
+                { name: 'Юпитер', radius: 1.8, distance: 18, color: '#ddbb99', hasStripes: true, hasSpot: true, isEarth: false, isMars: false, speed: 0.005, info: 'Масса: 1898×10^24 кг<br>Атмосфера: H2/He, Большое красное пятно' },
+                { name: 'Сатурн', radius: 1.5, distance: 22, color: '#eeddbb', hasStripes: true, hasSpot: false, isEarth: false, isMars: false, speed: 0.004, info: 'Масса: 568×10^24 кг<br>Имеет кольца из льда и пыли', hasRing: true },
+                { name: 'Уран', radius: 1.2, distance: 26, color: '#88ccff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.003, info: 'Масса: 86.8×10^24 кг<br>Атмосфера: H2/He/CH4, вращается на боку' },
+                { name: 'Нептун', radius: 1.2, distance: 30, color: '#3366ff', hasStripes: false, hasSpot: false, isEarth: false, isMars: false, speed: 0.002, info: 'Масса: 102×10^24 кг<br>Атмосфера: H2/He/CH4, сильные ветры' }
+            ];
 
-    planetData.forEach(p => {
-        const texture = createPlanetTexture(p.color, p.hasStripes, p.hasSpot, p.isEarth, p.isMars);
-        const material = new THREE.MeshStandardMaterial({ map: texture });
-        const geometry = new THREE.SphereGeometry(p.radius, 64, 64);
-        const planet = new THREE.Mesh(geometry, material);
-        planet.userData = { 
-            name: p.name, 
-            info: p.info, 
-            distance: p.distance, 
-            speed: p.speed, 
-            angle: Math.random() * Math.PI * 2 
-        };
-        planet.position.x = p.distance * Math.cos(planet.userData.angle);
-        planet.position.z = p.distance * Math.sin(planet.userData.angle);
-        solarScene.add(planet);
-        planets.push(planet);
+            planets.forEach(p => solarScene.remove(p)); // очистим предыдущие планеты (если переинициализация)
+            planets = [sun];
 
-        if (p.hasRing) {
-            const ringGeo = new THREE.TorusGeometry(p.radius * 1.8, 0.3, 16, 100);
-            const ringMat = new THREE.MeshStandardMaterial({ color: 0xc2b280, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            ring.rotation.z = 0.3;
-            planet.add(ring);
+            planetData.forEach(p => {
+                const texture = createPlanetTexture(p.color, p.hasStripes, p.hasSpot, p.isEarth, p.isMars);
+                const material = new THREE.MeshStandardMaterial({ map: texture });
+                const geometry = new THREE.SphereGeometry(p.radius, 64, 64);
+                const planet = new THREE.Mesh(geometry, material);
+                planet.userData = { 
+                    name: p.name, 
+                    info: p.info, 
+                    distance: p.distance, 
+                    speed: p.speed, 
+                    angle: Math.random() * Math.PI * 2 
+                };
+                planet.position.x = p.distance * Math.cos(planet.userData.angle);
+                planet.position.z = p.distance * Math.sin(planet.userData.angle);
+                solarScene.add(planet);
+                planets.push(planet);
+
+                if (p.hasRing) {
+                    const ringGeo = new THREE.TorusGeometry(p.radius * 1.8, 0.3, 16, 100);
+                    const ringMat = new THREE.MeshStandardMaterial({ color: 0xc2b280, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.rotation.x = Math.PI / 2;
+                    ring.rotation.z = 0.3;
+                    planet.add(ring);
+                }
+
+                const points = [];
+                for (let i = 0; i <= 64; i++) {
+                    const angle = (i / 64) * Math.PI * 2;
+                    points.push(new THREE.Vector3(p.distance * Math.cos(angle), 0, p.distance * Math.sin(angle)));
+                }
+                const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const orbitMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+                const orbit = new THREE.LineLoop(orbitGeo, orbitMat);
+                solarScene.add(orbit);
+            });
+
+            container.addEventListener('click', onClickPlanet);
+
+            let touchStartX = 0;
+            container.addEventListener('touchstart', (e) => {
+                touchStartX = e.touches[0].clientX;
+            });
+            container.addEventListener('touchend', (e) => {
+                if (!touchStartX) return;
+                let dx = e.changedTouches[0].clientX - touchStartX;
+                if (Math.abs(dx) > 30) {
+                    solarScene.rotation.y += dx * 0.005;
+                }
+            });
+
+            animateSolar();
         }
-
-        // Орбита
-        const points = [];
-        for (let i = 0; i <= 64; i++) {
-            const angle = (i / 64) * Math.PI * 2;
-            points.push(new THREE.Vector3(p.distance * Math.cos(angle), 0, p.distance * Math.sin(angle)));
-        }
-        const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
-        const orbitMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
-        const orbit = new THREE.LineLoop(orbitGeo, orbitMat);
-        solarScene.add(orbit);
-    });
-
-    container.addEventListener('click', onClickPlanet);
-
-    let touchStartX = 0;
-    container.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-    });
-    container.addEventListener('touchend', (e) => {
-        if (!touchStartX) return;
-        let dx = e.changedTouches[0].clientX - touchStartX;
-        if (Math.abs(dx) > 30) {
-            solarScene.rotation.y += dx * 0.005;
-        }
-    });
-
-    animateSolar();
-}
 
         function animateSolar() {
             requestAnimationFrame(animateSolar);
             if (solarScene && solarRenderer && solarCamera) {
                 planets.forEach(p => {
-                    p.userData.angle += p.userData.speed;
-                    p.position.x = p.userData.distance * Math.cos(p.userData.angle);
-                    p.position.z = p.userData.distance * Math.sin(p.userData.angle);
+                    if (p.userData.distance !== 0) { // не двигаем Солнце
+                        p.userData.angle += p.userData.speed;
+                        p.position.x = p.userData.distance * Math.cos(p.userData.angle);
+                        p.position.z = p.userData.distance * Math.sin(p.userData.angle);
+                    }
                     p.rotation.y += 0.01;
                 });
                 solarRenderer.render(solarScene, solarCamera);
@@ -1103,14 +1123,6 @@ function initSolarSystem() {
             if (e.target.classList.contains('clickable-word')) return;
             recordSecretClick('Orbital');
         });
-
-        // ---- ГОЛОСОВОЕ УПРАВЛЕНИЕ ----
-/*
-// ---- ГОЛОСОВОЕ УПРАВЛЕНИЕ ----
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    ...
-}
-*/
 
         // ---- RESIZE ДЛЯ СЦЕН ----
         window.addEventListener('resize', () => {
